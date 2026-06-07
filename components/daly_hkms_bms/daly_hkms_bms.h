@@ -21,6 +21,19 @@ namespace daly_hkms_bms {
 static const uint8_t DALY_CAN_MAX_CELL_COUNT = 48;
 static const uint8_t DALY_CAN_MAX_TEMP_COUNT = 8; // ???
 
+class DalyHkmsBmsInput {
+  public:
+    DalyHkmsBmsInput() {}
+    virtual uint16_t get_reg_addr() = 0;
+    virtual void handle_update(uint16_t value) = 0;
+};
+
+enum DalyHkmsBmsType
+{
+  ENERGY_STORAGE, // BMS_TYPE_01
+  POWER // BMS_TYPE_02
+};
+
 #pragma pack(1)
 struct DalyHkmsStatus
 {
@@ -116,7 +129,21 @@ class DalyHkmsBmsComponent : public Component {
 
   void dump_config() override;
 
-  void set_daly_address(uint8_t address);
+  void set_daly_address(uint8_t address) {
+    this->daly_address_ = address;
+  };
+  void set_bms_type(DalyHkmsBmsType type) {
+    this->bms_type_ = type;
+  };
+  DalyHkmsBmsType get_bms_type() {
+    return this->bms_type_;
+  }
+
+  void write_register(uint16_t reg, const std::vector<uint8_t> &data);
+
+  void register_input(DalyHkmsBmsInput *input) {
+    this->registered_inputs_.push_back(input);
+  }
 
 #ifdef USE_SENSOR
   void set_cell_voltage_sensor(uint16_t cell, sensor::Sensor *sensor) {
@@ -206,7 +233,7 @@ class DalyHkmsBmsComponent : public Component {
   DalyHkmsStatus fault_status_ = {};
 
   uint8_t daly_address_;
-  uint32_t update_interval_fast_;
+  DalyHkmsBmsType bms_type_;
 
 #ifdef USE_SENSOR
   sensor::Sensor *cell_voltage_sensors_[DALY_CAN_MAX_CELL_COUNT]{};
@@ -232,6 +259,8 @@ class DalyHkmsBmsComponent : public Component {
   }
 #endif
   uint16_t cell_balancing_sensors_max_{0};
+
+  std::vector<DalyHkmsBmsInput*> registered_inputs_{};
 };
 
 }  // namespace daly_hkms_bms

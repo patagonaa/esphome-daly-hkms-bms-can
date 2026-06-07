@@ -14,10 +14,6 @@ static const char *const TAG = "daly_hkms_bms";
 
 DalyHkmsBmsComponent::DalyHkmsBmsComponent(canbus::Canbus *canbus) { this->canbus = canbus; }
 
-void DalyHkmsBmsComponent::set_daly_address(uint8_t daly_address) {
-  this->daly_address_ = daly_address;
-}
-
 void DalyHkmsBmsComponent::setup() {
   auto cb = [this](uint32_t can_id, bool extended_id, bool rtr, const std::vector<uint8_t> &data) -> void {
     this->on_frame(can_id, extended_id, rtr, data);
@@ -203,6 +199,14 @@ void DalyHkmsBmsComponent::handle_msg_fault_info_1_(const std::vector<uint8_t> &
   publish_sensor_state_(this->alarm_level_soh_low_sensor_, this->fault_status_.lvl_soh_low, 0, 1);
   publish_sensor_state_(this->alarm_level_mos_overtemperature_sensor_, this->fault_status_.lvl_mos_overtemp, 0, 1);
 #endif
+
+  for (auto &input : this->registered_inputs_) {
+    uint16_t address = input->get_reg_addr();
+    if (address == DALY_CAN_REG_CHG_MOS)
+      input->handle_update(!this->fault_status_.chg_mos_off_bus);
+    if (address == DALY_CAN_REG_DSCHG_MOS)
+      input->handle_update(!this->fault_status_.dschg_mos_off_bus);
+  }
 
 #ifdef USE_BINARY_SENSOR
   bool has_warnings = false;
@@ -492,6 +496,11 @@ void DalyHkmsBmsComponent::handle_msg_fault_info_1_(const std::vector<uint8_t> &
     this->alerts_text_sensor_->publish_state(alerts_str);
   }
 #endif
+}
+
+void DalyHkmsBmsComponent::write_register(uint16_t reg, const std::vector<uint8_t> &data) {
+  uint32_t can_id = (uint32_t(reg) << 16) | (uint32_t(this->daly_address_) << 8) | 0x80;
+  this->canbus->send_data(can_id, true, false, data);
 }
 
 void DalyHkmsBmsComponent::dump_config() {

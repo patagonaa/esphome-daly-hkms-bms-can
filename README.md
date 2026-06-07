@@ -14,6 +14,7 @@ Also see https://github.com/syssi/esphome-daly-bms for a similar component that 
 daly_hkms_bms:
   - id: bms_1
     canbus_id: bms_can
+    bms_type: POWER
     address: 1
     update_interval: 10s
 ```
@@ -23,6 +24,7 @@ There can be multiple BMS attached to one CAN bus. To make this work, each BMS n
 #### Options:
 - **id**: ID of this component
 - **canbus_id**: ID of the [canbus component](https://esphome.io/components/canbus.html) the BMS is attached to
+- **bms_type**: The type of the BMS. Can be `POWER` or `ENERGY_STORAGE`. For most DALY BMS, `POWER` should be correct.
 - **address**: The address of the BMS. By default, this is set to 1. The address ("board number") can be set using the DALY PC software.
 - **update_interval**: Delay between data requests (default `30s`)
 - **update_interval_fast**:
@@ -242,6 +244,32 @@ switch:
       name: "BMS discharge FET"
 ```
 
+## Advanced usage
+Setting of registers other than the charge/discharge FETs, especially configuration registers (like warning and error levels) is not implemented in this component, both for security and simplicity reasons. It is however still possible to do so by directly calling the `daly_hkms_bms` component's `write_register(uint16_t reg, std::vector<uint8_t> data)` function.
+
+The writable registers are not made public by DALY themselves, they can however be reverse engineered from the DALY PC software (look in `FrmParameter`, `FrmProduct`, etc.) or sniffed from the bus.
+Be aware that the ids differ between `BMS_TYPE_01` ("Energy Storage") and `BMS_TYPE_02` ("Power").
+
+Some maybe useful registers (type 1 / 2):
+- `0x181E` / `0x161E` SoC * 10 (100% * 10 = value 1000)
+
+Example:  
+To reset the SoC to 100% every 30 seconds if the BMS total voltage is above 51V, you can do:
+```yaml
+interval:
+  - interval: 30s
+    then:
+      - if:
+          condition:
+            sensor.in_range:
+              id: bms_1_total_volt # sensor id of the BMS total voltage
+              above: 51.0
+          then:
+            - lambda: |-
+                id(bms_1).write_register(0x161E, 1000);
+```
+This will prevent the BMS SoC from dropping while the battery is fully charged. This may be necessary because the BMS only resets the SoC to 100% when switching off due to cell overvoltage, which either means overcharging the cells, or setting the limit unnecessarily low so it can be hit during normal charging.
+
 ## BMS connection
 Be aware that by default, the BMS goes to sleep after 1 hour of inactivity and can not be woken up via CAN (probably, to be tested!), only by RX/TX UART communication (including the Bluetooth dongle), charging/discharging the battery or toggling the switch input.
 
@@ -260,6 +288,7 @@ Please consider donating (via GitHub Sponsors) if this project is useful to you.
 
 You can also support this project in other ways:
 
+- by testing with other BMS models than the ones listed and adding them to the readme
 - by reporting bugs (via issues)
 - by requesting features (via issues/discussions)
 - by contributing code directly (via pull requests)

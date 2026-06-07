@@ -23,6 +23,7 @@ static const uint16_t DALY_CAN_LIMIT_STATE = 0x40D;
 
 static const uint16_t DALY_CAN_FAULT_INFO_1 = 0x40E;
 
-
+static const uint16_t DALY_CAN_REG_CHG_MOS = 0x182A;
+static const uint16_t DALY_CAN_REG_DSCHG_MOS = 0x182C;
 }  // namespace daly_hkms_bms
 }  // namespace esphome

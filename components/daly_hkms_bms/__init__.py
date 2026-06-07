@@ -9,6 +9,8 @@ DEPENDENCIES = ["canbus"]
 
 CONF_CANBUS_ID = "canbus_id"
 CONF_DALY_HKMS_BMS_ID = "daly_hkms_bms_id"
+CONF_BMS_TYPE = "bms_type"
+
 MAX_CELL_NUMBER = 48
 MAX_TEMP_NUMBER = 8
 
@@ -17,11 +19,19 @@ DalyHkmsBmsComponent = daly_hkms_bms_ns.class_(
     "DalyHkmsBmsComponent", cg.Component
 )
 
+DalyHkmsBmsType = daly_hkms_bms_ns.enum("DalyHkmsBmsType")
+
+BMS_TYPE = {
+    "ENERGY_STORAGE": DalyHkmsBmsType.ENERGY_STORAGE,
+    "POWER": DalyHkmsBmsType.POWER,
+}
+
 CONFIG_SCHEMA = cv.Schema(
     {
         cv.GenerateID(): cv.declare_id(DalyHkmsBmsComponent),
         cv.Required(CONF_CANBUS_ID): cv.use_id(CanbusComponent),
         cv.Optional(CONF_ADDRESS, default=1): cv.positive_int,
+        cv.Required(CONF_BMS_TYPE): cv.enum(BMS_TYPE),
     }
 )
 
@@ -33,3 +43,4 @@ async def to_code(config):
 
     hub = await cg.get_variable(config[CONF_ID])
     cg.add(hub.set_daly_address(config[CONF_ADDRESS]))
+    cg.add(hub.set_bms_type(config[CONF_BMS_TYPE]))

@@ -19,6 +19,92 @@ namespace esphome {
 namespace daly_hkms_bms {
 
 static const uint8_t DALY_CAN_MAX_CELL_COUNT = 48;
+static const uint8_t DALY_CAN_MAX_TEMP_COUNT = 8; // ???
+
+#pragma pack(1)
+struct DalyHkmsStatus
+{
+  // Code 0-1
+  uint8_t lvl_cell_ovp : 3;
+  uint8_t lvl_cell_uvp : 3;
+  bool smart_charger_connected : 1;
+  bool err_smart_charger_connection : 1;
+
+  uint8_t lvl_cell_volt_diff : 3;
+  uint8_t lvl_chg_overtemp : 3;
+  bool smart_discharger_connected : 1;
+  bool err_smart_discharger_connection : 1;
+
+  // Code 2-3
+  uint8_t lvl_chg_undertemp : 3;
+  uint8_t lvl_dschg_overtemp : 3;
+  bool err_chg_mos_temp_high : 1;
+  bool err_chg_mos_temp_detect : 1;
+
+  uint8_t lvl_dschg_undertemp : 3;
+  uint8_t lvl_temp_diff : 3;
+  bool err_dschg_mos_temp_high : 1;
+  bool err_dschg_mos_temp_detect : 1;
+
+  // Code 4-5
+  uint8_t lvl_total_ovp : 3;
+  uint8_t lvl_total_uvp : 3;
+  bool err_short_circuit : 1;
+  bool upgrade_sign: 1;
+
+  uint8_t lvl_chg_ocp : 3;
+  uint8_t lvl_dschg_ocp : 3;
+  bool err_chg_undervoltage : 1;
+  bool err_dschg_overvoltage : 1;
+
+  // Code 6-7
+  uint8_t lvl_soc_low : 3;
+  uint8_t lvl_soh_low : 3;
+  bool parallel_comm : 1;
+  bool err_parallel_comm: 1;
+
+  uint8_t lvl_mos_overtemp : 3;
+  uint8_t lvl_thermal_runaway : 3;
+  bool : 1;
+  bool : 1;
+
+  // Code 8-9
+  uint16_t : 16;
+
+  // Code 10-11
+  uint8_t : 8;
+
+  bool err_afe_chip: 1;
+  bool err_afe_comm: 1;
+  bool err_afe_sampling: 1;
+  bool err_volt_detect: 1;
+  bool err_volt_detect_disconnected: 1;
+  bool err_volt_total_detect: 1;
+  bool err_curr_detect: 1;
+  bool err_temp_detect: 1;
+
+  // Code 12-13
+  bool err_temp_disconnected: 1;
+  bool err_eeprom: 1;
+  bool err_flash: 1;
+  bool err_rtc: 1;
+  bool err_chg_mos: 1;
+  bool err_dschg_mos: 1;
+  bool err_prechg_mos: 1;
+  bool err_prechg: 1;
+
+  bool chg_mos_off_bus: 1;
+  bool dschg_mos_off_bus: 1;
+  bool chg_mos_off_switch: 1;
+  bool dschg_mos_off_switch: 1;
+  bool fan_active: 1;
+  bool heating_active: 1;
+  bool current_limit_active: 1;
+  bool err_heating: 1;
+};
+
+static_assert(sizeof(DalyHkmsStatus) == 14);
+
 
 class DalyHkmsBmsComponent : public Component {
  public:
@@ -37,6 +123,11 @@ class DalyHkmsBmsComponent : public Component {
     if (cell > this->cell_voltage_sensors_max_)
       this->cell_voltage_sensors_max_ = cell;
     this->cell_voltage_sensors_[cell - 1] = sensor;
+  };
+  void set_temperature_sensor(uint16_t num, sensor::Sensor *sensor) {
+    if (num > this->temperature_sensors_max_)
+      this->temperature_sensors_max_ = num;
+    this->temperature_sensors_[num - 1] = sensor;
   };
 
   SUB_SENSOR(voltage)
@@ -78,15 +169,6 @@ class DalyHkmsBmsComponent : public Component {
   SUB_SENSOR(alarm_level_soc_low)
   SUB_SENSOR(alarm_level_soh_low)
   SUB_SENSOR(alarm_level_mos_overtemperature)
-
-  SUB_SENSOR(temperature_1)
-  SUB_SENSOR(temperature_2)
-  SUB_SENSOR(temperature_3)
-  SUB_SENSOR(temperature_4)
-  SUB_SENSOR(temperature_5)
-  SUB_SENSOR(temperature_6)
-  SUB_SENSOR(temperature_7)
-  SUB_SENSOR(temperature_8)
 #endif
 
 #ifdef USE_TEXT_SENSOR
@@ -117,19 +199,37 @@ class DalyHkmsBmsComponent : public Component {
 
  protected:
   canbus::Canbus *canbus;
-  void handle_msg_cell_volts(const std::vector<uint8_t> &message);
-  void publish_sensor_state(sensor::Sensor *sensor, int32_t value, int16_t offset, float factor,  int32_t unavailable_value = -1);
+  void handle_msg_cell_volts_(const std::vector<uint8_t> &message);
+  void handle_msg_cell_temps_(const std::vector<uint8_t> &message);
+  void handle_msg_fault_info_1(const std::vector<uint8_t> &message);
+
+  DalyHkmsStatus fault_status_ = {};
 
   uint8_t daly_address_;
   uint32_t update_interval_fast_;
 
 #ifdef USE_SENSOR
   sensor::Sensor *cell_voltage_sensors_[DALY_CAN_MAX_CELL_COUNT]{};
+  sensor::Sensor *temperature_sensors_[DALY_CAN_MAX_TEMP_COUNT]{};
+
+  void publish_sensor_state_(sensor::Sensor *sensor, int32_t value, int16_t offset, float factor, int32_t unavailable_value = -1) {
+    if (sensor == nullptr)
+      return;
+    float out_value = value == unavailable_value ? NAN : (value + offset) * factor;
+    sensor->publish_state(out_value);
+  }
 #endif
   uint16_t cell_voltage_sensors_max_{0};
+  uint16_t temperature_sensors_max_{0};
 
 #ifdef USE_BINARY_SENSOR
   binary_sensor::BinarySensor *cell_balancing_sensors_[DALY_CAN_MAX_CELL_COUNT]{};
+
+  void publish_sensor_state_(binary_sensor::BinarySensor *sensor, bool state) {
+    if (sensor) {
+      sensor->publish_state(state);
+    }
+  }
 #endif
   uint16_t cell_balancing_sensors_max_{0};
 };

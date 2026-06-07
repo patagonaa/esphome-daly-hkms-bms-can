@@ -10,6 +10,7 @@ DEPENDENCIES = ["canbus"]
 CONF_CANBUS_ID = "canbus_id"
 CONF_DALY_HKMS_BMS_ID = "daly_hkms_bms_id"
 MAX_CELL_NUMBER = 48
+MAX_TEMP_NUMBER = 8
 
 daly_hkms_bms_ns = cg.esphome_ns.namespace("daly_hkms_bms")
 DalyHkmsBmsComponent = daly_hkms_bms_ns.class_(

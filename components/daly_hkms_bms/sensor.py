@@ -31,7 +31,7 @@ from esphome.const import (
     ICON_THERMOMETER,
     ICON_GAUGE,
 )
-from . import MAX_CELL_NUMBER, DalyHkmsBmsComponent, CONF_DALY_HKMS_BMS_ID
+from . import MAX_CELL_NUMBER, MAX_TEMP_NUMBER, DalyHkmsBmsComponent, CONF_DALY_HKMS_BMS_ID
 
 CONF_MAX_CELL_VOLTAGE = "max_cell_voltage"
 CONF_MAX_CELL_VOLTAGE_NUMBER = "max_cell_voltage_number"
@@ -78,8 +78,6 @@ ICON_SCALE_BALANCE = "mdi:scale-balance"
 ICON_BATTERY_ALERT = "mdi:battery-alert"
 
 UNIT_AMPERE_HOUR = "Ah"
-
-MAX_TEMP_NUMBER = 8
 
 TYPES = [
     CONF_VOLTAGE,

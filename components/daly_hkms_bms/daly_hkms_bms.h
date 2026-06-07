@@ -201,7 +201,7 @@ class DalyHkmsBmsComponent : public Component {
   canbus::Canbus *canbus;
   void handle_msg_cell_volts_(const std::vector<uint8_t> &message);
   void handle_msg_cell_temps_(const std::vector<uint8_t> &message);
-  void handle_msg_fault_info_1(const std::vector<uint8_t> &message);
+  void handle_msg_fault_info_1_(const std::vector<uint8_t> &message);
 
   DalyHkmsStatus fault_status_ = {};
 

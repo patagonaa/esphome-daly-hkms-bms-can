@@ -85,15 +85,32 @@ void DalyHkmsBmsComponent::on_frame(uint32_t can_id, bool extended_id, bool rtr,
     // publish_sensor_state_(this->delta_temperature_sensor_, (message[6] << 8) | message[7], 0, 0.001);
     break;
 
-  case DALY_CAN_STATS_1:
-    break;
-
   case DALY_CAN_STATS_2:
     publish_sensor_state_(this->cells_number_sensor_, message[0], 0, 1);
     publish_sensor_state_(this->temps_number_sensor_, message[1], 0, 1);
 
     publish_sensor_state_(this->remaining_capacity_sensor_, (message[2] << 24) | (message[3] << 16) | (message[4] << 8) | message[5], 0, 0.001);
     publish_sensor_state_(this->cycles_sensor_, (message[6] << 8) | message[7], 0, 0.001);
+    break;
+#endif
+
+#ifdef USE_TEXT_SENSOR
+  case DALY_CAN_STATS_1:
+    if (this->status_text_sensor_ != nullptr) {
+      switch (message[0]) {
+        case 0:
+          this->status_text_sensor_->publish_state("Stationary");
+          break;
+        case 1:
+          this->status_text_sensor_->publish_state("Charging");
+          break;
+        case 2:
+          this->status_text_sensor_->publish_state("Discharging");
+          break;
+        default:
+          break;
+      }
+    }
     break;
 #endif
 
@@ -115,7 +132,6 @@ void DalyHkmsBmsComponent::on_frame(uint32_t can_id, bool extended_id, bool rtr,
       publish_sensor_state_(this->cell_balancing_sensors_[i], message[field] & (1 << bit));
     }
 #endif
-
 #ifdef USE_SENSOR
     publish_sensor_state_(this->balance_current_sensor_, (message[2] << 8) | message[3], -30000, 0.001);
 #endif
@@ -160,7 +176,7 @@ void DalyHkmsBmsComponent::handle_msg_cell_temps_(const std::vector<uint8_t> &me
 #endif
 }
 
-void DalyHkmsBmsComponent::handle_msg_fault_info_1(const std::vector<uint8_t> &message) {
+void DalyHkmsBmsComponent::handle_msg_fault_info_1_(const std::vector<uint8_t> &message) {
   uint8_t msg_num = message[0];
   static_assert(sizeof(DalyHkmsStatus) == 14);
   if (msg_num == 1) {
@@ -280,6 +296,201 @@ void DalyHkmsBmsComponent::handle_msg_fault_info_1(const std::vector<uint8_t> &m
 
   publish_sensor_state_(this->has_warnings_binary_sensor_, has_warnings || has_errors);
   publish_sensor_state_(this->has_errors_binary_sensor_, has_errors);
+#endif
+
+#ifdef USE_TEXT_ALERTS
+  if (this->alerts_text_sensor_ != nullptr) {
+    std::ostringstream alerts_buffer;
+
+    // Code 0-1
+    if (this->fault_status_.lvl_cell_ovp > 0) {
+      alerts_buffer << "cell volt high lvl " << int(this->fault_status_.lvl_cell_ovp) << "\n";
+    }
+    if (this->fault_status_.lvl_cell_uvp > 0) {
+      alerts_buffer << "cell volt low lvl " << int(this->fault_status_.lvl_cell_uvp) << "\n";
+    }
+    if (this->fault_status_.lvl_cell_volt_diff > 0) {
+      alerts_buffer << "cell volt diff lvl " << int(this->fault_status_.lvl_cell_volt_diff) << "\n";
+    }
+    if (this->fault_status_.lvl_chg_overtemp > 0) {
+      alerts_buffer << "chg temp high lvl " << int(this->fault_status_.lvl_chg_overtemp) << "\n";
+    }
+
+    if (this->fault_status_.smart_charger_connected) {
+      alerts_buffer << "smart charger connected\n";
+    }
+    if (this->fault_status_.err_smart_charger_connection) {
+      alerts_buffer << "smart charger disconnected\n";
+    }
+
+    if (this->fault_status_.smart_discharger_connected) {
+      alerts_buffer << "smart discharger connected\n";
+    }
+    if (this->fault_status_.err_smart_discharger_connection) {
+      alerts_buffer << "smart discharger disconnected\n";
+    }
+
+    // Code 2-3
+    if (this->fault_status_.lvl_chg_undertemp > 0) {
+      alerts_buffer << "chg temp low lvl " << int(this->fault_status_.lvl_chg_undertemp) << "\n";
+    }
+    if (this->fault_status_.lvl_dschg_overtemp > 0) {
+      alerts_buffer << "dschg temp high lvl " << int(this->fault_status_.lvl_dschg_overtemp) << "\n";
+    }
+    if (this->fault_status_.lvl_dschg_undertemp > 0) {
+      alerts_buffer << "dschg temp low lvl " << int(this->fault_status_.lvl_dschg_undertemp) << "\n";
+    }
+    if (this->fault_status_.lvl_temp_diff > 0) {
+      alerts_buffer << "temp diff lvl " << int(this->fault_status_.lvl_temp_diff) << "\n";
+    }
+
+    if (this->fault_status_.err_chg_mos_temp_high) {
+      alerts_buffer << "chg mos temp high\n";
+    }
+    if (this->fault_status_.err_chg_mos_temp_detect) {
+      alerts_buffer << "chg mos temp detect fault\n";
+    }
+
+    if (this->fault_status_.err_dschg_mos_temp_high) {
+      alerts_buffer << "dschg mos temp high\n";
+    }
+    if (this->fault_status_.err_dschg_mos_temp_detect) {
+      alerts_buffer << "dschg mos temp detect fault\n";
+    }
+
+    // Code 4-5
+    if (this->fault_status_.lvl_total_ovp > 0) {
+      alerts_buffer << "total volt high lvl " << int(this->fault_status_.lvl_total_ovp) << "\n";
+    }
+    if (this->fault_status_.lvl_total_uvp > 0) {
+      alerts_buffer << "total volt low lvl " << int(this->fault_status_.lvl_total_uvp) << "\n";
+    }
+    if (this->fault_status_.lvl_chg_ocp > 0) {
+      alerts_buffer << "chg curr high lvl " << int(this->fault_status_.lvl_chg_ocp) << "\n";
+    }
+    if (this->fault_status_.lvl_dschg_ocp > 0) {
+      alerts_buffer << "dschg curr high lvl " << int(this->fault_status_.lvl_dschg_ocp) << "\n";
+    }
+
+    if (this->fault_status_.err_short_circuit) {
+      alerts_buffer << "short circuit protect\n";
+    }
+    if (this->fault_status_.upgrade_sign) {
+      alerts_buffer << "upgrade sign\n";
+    }
+
+    if (this->fault_status_.err_chg_undervoltage) {
+      alerts_buffer << "charge undervoltage\n";
+    }
+    if (this->fault_status_.err_dschg_overvoltage) {
+      alerts_buffer << "discharge overvoltage\n";
+    }
+
+    // Code 6-7
+    if (this->fault_status_.lvl_soc_low > 0) {
+      alerts_buffer << "soc low lvl " << int(this->fault_status_.lvl_soc_low) << "\n";
+    }
+    if (this->fault_status_.lvl_soh_low > 0) {
+      alerts_buffer << "soh low lvl " << int(this->fault_status_.lvl_soh_low) << "\n";
+    }
+    if (this->fault_status_.lvl_mos_overtemp > 0) {
+      alerts_buffer << "mos temp high lvl " << int(this->fault_status_.lvl_mos_overtemp) << "\n";
+    }
+    if (this->fault_status_.lvl_thermal_runaway > 0) {
+      alerts_buffer << "thermal runaway lvl " << int(this->fault_status_.lvl_thermal_runaway) << "\n";
+    }
+
+    if (this->fault_status_.parallel_comm) {
+      alerts_buffer << "parallel comm ok\n";
+    }
+    if (this->fault_status_.err_parallel_comm) {
+      alerts_buffer << "parallel comm fault\n";
+    }
+
+    // Code 10-11
+    if (this->fault_status_.err_afe_chip) {
+      alerts_buffer << "afe ic fault\n";
+    }
+    if (this->fault_status_.err_afe_comm) {
+      alerts_buffer << "afe ic comm fault\n";
+    }
+    if (this->fault_status_.err_afe_sampling) {
+      alerts_buffer << "afe ic ad fault\n";
+    }
+    if (this->fault_status_.err_volt_detect) {
+      alerts_buffer << "cell volt detect fault\n";
+    }
+    if (this->fault_status_.err_volt_detect_disconnected) {
+      alerts_buffer << "cell volt detect disconnected\n";
+    }
+    if (this->fault_status_.err_volt_total_detect) {
+      alerts_buffer << "total volt detect fault\n";
+    }
+    if (this->fault_status_.err_curr_detect) {
+      alerts_buffer << "curr detect fault\n";
+    }
+    if (this->fault_status_.err_temp_detect) {
+      alerts_buffer << "temp detect fault\n";
+    }
+
+    // Code 12-13
+    if (this->fault_status_.err_temp_disconnected) {
+      alerts_buffer << "temp detect disconnected\n";
+    }
+    if (this->fault_status_.err_eeprom) {
+      alerts_buffer << "EEPROM fault\n";
+    }
+    if (this->fault_status_.err_flash) {
+      alerts_buffer << "flash fault\n";
+    }
+    if (this->fault_status_.err_rtc) {
+      alerts_buffer << "RTC fault\n";
+    }
+    if (this->fault_status_.err_chg_mos) {
+      alerts_buffer << "chg mos fault\n";
+    }
+    if (this->fault_status_.err_dschg_mos) {
+      alerts_buffer << "dschg mos fault\n";
+    }
+    if (this->fault_status_.err_prechg_mos) {
+      alerts_buffer << "prechg mos fault\n";
+    }
+    if (this->fault_status_.err_prechg) {
+      alerts_buffer << "prechg failed\n";
+    }
+
+    if (this->fault_status_.chg_mos_off_bus) {
+      alerts_buffer << "chg mos off (via comm)\n";
+    }
+    if (this->fault_status_.dschg_mos_off_bus) {
+      alerts_buffer << "dschg mos off (via comm)\n";
+    }
+    if (this->fault_status_.chg_mos_off_switch) {
+      alerts_buffer << "chg mos off (via switch)\n";
+    }
+    if (this->fault_status_.dschg_mos_off_switch) {
+      alerts_buffer << "dschg mos off (via switch)\n";
+    }
+    if (this->fault_status_.fan_active) {
+      alerts_buffer << "fan active\n";
+    }
+    if (this->fault_status_.heating_active) {
+      alerts_buffer << "heater active\n";
+    }
+    if (this->fault_status_.current_limit_active) {
+      alerts_buffer << "current limit active\n";
+    }
+    if (this->fault_status_.err_heating) {
+      alerts_buffer << "heater fault\n";
+    }
+
+    std::string alerts_str = alerts_buffer.str();
+    // remove trailing newline
+    if (!alerts_str.empty())
+      alerts_str.pop_back();
+
+    this->alerts_text_sensor_->publish_state(alerts_str);
+  }
 #endif
 }
 

@@ -169,21 +169,19 @@ switch:
 ```yaml
 external_components:
   - source: github://patagonaa/esphome-daly-hkms-bms@main
-    components: [daly_hkms_bms, modbus]
+    components: [daly_hkms_bms]
 
-uart:
-  - id: bms_uart
-    baud_rate: 9600
-    rx_pin: GPIO21
-    tx_pin: GPIO22
-
-modbus:
-  id: bms_modbus
-  uart_id: bms_uart
-  flow_control_pin: GPIO17 # not required if your RS485 transceiver has auto direction control (only has RX/TX)
+canbus:
+  - platform: esp32_can
+    id: bms_can
+    tx_pin: GPIO27
+    rx_pin: GPIO26
+    use_extended_id: true
+    can_id: 0
+    bit_rate: 250kbps
 
 daly_hkms_bms:
-  - modbus_id: bms_modbus
+  - canbus_id: bms_can
     id: bms_1
     address: 1
     update_interval: 10s

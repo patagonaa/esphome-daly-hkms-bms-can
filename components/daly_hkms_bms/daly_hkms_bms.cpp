@@ -138,7 +138,7 @@ void DalyHkmsBmsComponent::on_frame(uint32_t can_id, bool extended_id, bool rtr,
     break;
 
   case DALY_CAN_FAULT_INFO_1:
-    handle_msg_fault_info_1(message);
+    handle_msg_fault_info_1_(message);
     break;
 
   default:

@@ -39,8 +39,7 @@ class DalyHkmsBmsSwitch : public switch_::Switch, public Component, public DalyH
   uint16_t internal_address_;
 
   void write_state(bool state) override {
-    std::vector<uint8_t> data = {(uint8_t)(state ? 1 : 0), 0, 0, 0, 0, 0, 0, 0};
-
+    std::vector<uint8_t> data = {(uint8_t)(state ? 1 : 0)};
     this->parent_->write_register(this->internal_address_, data);
   };
 };

@@ -21,6 +21,8 @@ namespace daly_hkms_bms {
 static const uint8_t DALY_CAN_MAX_CELL_COUNT = 48;
 static const uint8_t DALY_CAN_MAX_TEMP_COUNT = 8; // ???
 
+static const size_t DALY_CAN_FAULT_STATUS_LEN = 14;
+
 class DalyHkmsBmsInput {
   public:
     DalyHkmsBmsInput() {}
@@ -115,7 +117,7 @@ struct __attribute__((packed)) DalyHkmsStatus
   bool err_heating: 1;
 };
 
-static_assert(sizeof(DalyHkmsStatus) == 14);
+static_assert(sizeof(DalyHkmsStatus) == DALY_CAN_FAULT_STATUS_LEN);
 
 
 class DalyHkmsBmsComponent : public Component {
@@ -229,7 +231,7 @@ class DalyHkmsBmsComponent : public Component {
   void handle_msg_cell_temps_(const std::vector<uint8_t> &message);
   void handle_msg_fault_info_1_(const std::vector<uint8_t> &message);
 
-  DalyHkmsStatus fault_status_ = {};
+  uint8_t fault_status_[DALY_CAN_FAULT_STATUS_LEN] = {};
 
   uint8_t daly_address_;
   DalyHkmsBmsType bms_type_;

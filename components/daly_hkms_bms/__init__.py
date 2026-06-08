@@ -39,8 +39,6 @@ CONFIG_SCHEMA = cv.Schema(
 async def to_code(config):
     canbus = await cg.get_variable(config[CONF_CANBUS_ID])
     canbus_var = cg.new_Pvariable(config[CONF_ID], canbus)
+    cg.add(canbus_var.set_daly_address(config[CONF_ADDRESS]))
+    cg.add(canbus_var.set_bms_type(config[CONF_BMS_TYPE]))
     await cg.register_component(canbus_var, config)
-
-    hub = await cg.get_variable(config[CONF_ID])
-    cg.add(hub.set_daly_address(config[CONF_ADDRESS]))
-    cg.add(hub.set_bms_type(config[CONF_BMS_TYPE]))

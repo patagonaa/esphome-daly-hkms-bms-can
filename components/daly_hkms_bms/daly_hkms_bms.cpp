@@ -20,6 +20,9 @@ void DalyHkmsBmsComponent::setup() {
   };
 
   this->canbus->add_callback(cb);
+
+  // needs to be sent regularly so daly bms sends periodic data
+  this->set_interval("request_data", 2000, [this]() { this->canbus->send_data(0x400FF80, true, false, {0, 0, 0, 0, 0, 0, 0, 0}); });
 }
 
 void DalyHkmsBmsComponent::loop() {
@@ -30,12 +33,12 @@ void DalyHkmsBmsComponent::on_frame(uint32_t can_id, bool extended_id, bool rtr,
     return;
   }
 
-  uint8_t bms_id = can_id & 0x000000FF;
+  uint8_t bms_id = can_id & 0x00000FF;
   if (bms_id != this->daly_address_) {
     return;
   }
 
-  uint16_t register_id = (can_id & 0xFFF00000) >> 20;
+  uint16_t register_id = (can_id & 0xFFF0000) >> 16;
 
   switch (register_id)
   {
@@ -150,7 +153,7 @@ void DalyHkmsBmsComponent::handle_msg_cell_volts_(const std::vector<uint8_t> &me
   {
     uint16_t mv = (message[1 + i * 2] << 8) | message[2 + i * 2];
     size_t cell_num = msg_num*3 + i;
-    if (cell_num >= this->cell_voltage_sensors_max_) {
+    if (cell_num < this->cell_voltage_sensors_max_) {
       publish_sensor_state_(this->cell_voltage_sensors_[cell_num], mv, 0, 0.001);
     }
   }
@@ -165,7 +168,7 @@ void DalyHkmsBmsComponent::handle_msg_cell_temps_(const std::vector<uint8_t> &me
   {
     uint16_t val = message[1 + i];
     size_t temp_num = msg_num*7 + i;
-    if (temp_num >= this->temperature_sensors_max_) {
+    if (temp_num < this->temperature_sensors_max_) {
       publish_sensor_state_(this->temperature_sensors_[temp_num], val, -40, 1);
     }
   }
@@ -176,10 +179,10 @@ void DalyHkmsBmsComponent::handle_msg_fault_info_1_(const std::vector<uint8_t> &
   uint8_t msg_num = message[0];
   static_assert(sizeof(DalyHkmsStatus) == 14);
   if (msg_num == 1) {
-    std::memcpy(&this->fault_status_, message.data() + 1, 7);
+    std::memcpy(reinterpret_cast<uint8_t*>(&(this->fault_status_)), message.data() + 1, 7);
   }
   if (msg_num == 2) {
-    std::memcpy((&this->fault_status_) + 7, message.data() + 1, 7);
+    std::memcpy(reinterpret_cast<uint8_t*>(&(this->fault_status_)) + 7, message.data() + 1, 7);
   }
 
 #ifdef USE_SENSOR

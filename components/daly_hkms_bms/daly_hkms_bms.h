@@ -34,8 +34,7 @@ enum DalyHkmsBmsType
   POWER // BMS_TYPE_02
 };
 
-#pragma pack(1)
-struct DalyHkmsStatus
+struct __attribute__((packed)) DalyHkmsStatus
 {
   // Code 0-1
   uint8_t lvl_cell_ovp : 3;

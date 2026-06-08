@@ -3,7 +3,7 @@ ESPHome component to monitor DALY H/K/M/S-Series Battery Management Systems via 
 Works with other of the "new" DALY BMS as well.
 
 > [!CAUTION]
-> This is untested for now!
+> This is not tested thorougly, use at your own risk and check if data is plausible!
 
 Also see https://github.com/syssi/esphome-daly-bms for a similar component that uses BLE.
 

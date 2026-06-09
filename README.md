@@ -284,11 +284,37 @@ Be aware that by default, the BMS goes to sleep after 1 hour of inactivity and c
 The BMS connectors are compatible with JST-GH (1.25mm pin pitch).
 
 ### CAN
-In a CAN bus, no pins are swapped between sender and receiver(s) (L -> L, H -> H, GND -> GND).
+CAN always needs a CAN controller and transceiver. The ESP32 and most variants have at least one [built-in CAN controller](https://esphome.io/components/canbus/esp32_can/), so only a transceiver is required (for example, SN65HVD230): 
 
-Also, the CAN outputs of the BMS are isolated from the battery (at least on the K-series), so there are no ground issues like the UART pins have.
+```
+┌───────────┐   ┌───────────────────┐          ┌───────────┐
+│           │   │                   │          │           │
+│   ESP32   │   │  CAN Transceiver  │          │    BMS    │
+│           │   │                   │          │           │
+│        TX ├───┤ TX          CAN_H ├───────┬──┼ CAN_H     │
+│           │   │                   │       │  │           │
+│        RX ├───┤ RX          CAN_L ├────┬──┼──┤ CAN_L     │
+│           │   │                   │    │  │  │           │
+│       3V3 ├───┤ 3V3               │ ┌──┼──┼──┼   GND     │
+│           │   │                   │ │  │  │  │           │
+│       GND ┼─┬─┼ GND               │ │  │  │  └───────────┘
+│           │ │ │                   │ │  │  │  ┌───────────┐
+└───────────┘ │ └───────────────────┘ │  │  │  │           │
+              │                       │  │  │  │    BMS    │
+              └───────────────────────┤  │  │  │           │
+                                      │  │  └──┼ CAN_H     │
+                                      │  │     │           │
+                                      │  └─────┼ CAN_L     │
+                                      │        │           │
+                                      └────────┤   GND     │
+                                               │           │
+                                               └───────────┘
+```
 
-Still, always connect the ground when using CAN, to avoid stray currents running through the CAN transceiver.
+The external CAN controller [MCP2515](https://esphome.io/components/canbus/mcp2515/) might also work (which makes it possible to use an ESP8266), but due to the slow polling of ESPHome and small receive buffer, I do not recommended this as messages might be dropped. Also, the MCP2515 is 5V only, so some kind of level shifter is required to work with the ESP32's 3.3V.
+
+The CAN bus of the BMS is isolated from the battery (at least on the K-series), so there are no ground issues when powering the ESP via the battery (like with the UART pins).
+The grounds should be connected anyway to avoid stray currents running through the CAN transceiver.
 
 ## Support
 

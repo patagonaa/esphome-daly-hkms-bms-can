@@ -57,14 +57,15 @@ void DalyHkmsBmsComponent::on_frame(uint32_t can_id, bool extended_id, bool rtr,
     return;
   }
 
-  uint16_t register_id = (can_id & 0xFFF0000) >> 16;
+  uint16_t register_id = (can_id & 0xFFFF0000) >> 16;
 
   this->last_update_ = millis();
-  ESP_LOGV(TAG, "BMS %d: got register %x", this->daly_address_, register_id);
+  ESP_LOGD(TAG, "BMS %d: got register %x", this->daly_address_, register_id);
 
   switch (register_id)
   {
   case DALY_CAN_CELL_VOLTS:
+  case DALY_CAN_CELL_VOLTS_ALT:
     handle_msg_cell_volts_(message);
     break;
 

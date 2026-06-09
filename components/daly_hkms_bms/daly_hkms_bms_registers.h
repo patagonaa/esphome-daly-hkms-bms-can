@@ -4,6 +4,11 @@ namespace daly_hkms_bms {
 
 static const uint16_t DALY_CAN_CELL_VOLTS = 0x400;
 
+// for __some__ reason, one of my BMS sends the cell voltages with this CAN id.
+// I don't know why, a reset doesn't fix it, maybe the firmware is corrupted or something.
+// either way, it doesn't hurt to support this ID as well
+static const uint16_t DALY_CAN_CELL_VOLTS_ALT = 0x1388;
+
 static const uint16_t DALY_CAN_CELL_TEMPS = 0x401;
 static const uint16_t DALY_CAN_INFO_0 = 0x402;
 static const uint16_t DALY_CAN_INFO_1 = 0x403;

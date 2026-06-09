@@ -112,7 +112,7 @@ void DalyHkmsBmsComponent::on_frame(uint32_t can_id, bool extended_id, bool rtr,
     publish_sensor_state_(this->temps_number_sensor_, message[1], 0, 1);
 
     publish_sensor_state_(this->remaining_capacity_sensor_, (message[2] << 24) | (message[3] << 16) | (message[4] << 8) | message[5], 0, 0.001);
-    publish_sensor_state_(this->cycles_sensor_, (message[6] << 8) | message[7], 0, 0.001);
+    publish_sensor_state_(this->cycles_sensor_, (message[6] << 8) | message[7], 0, 1);
     break;
 #endif
 

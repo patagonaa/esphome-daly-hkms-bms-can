@@ -4,6 +4,7 @@ Works with other of the "new" DALY BMS as well.
 
 Tested with:
 - 100A 15S K-Series BMS
+- 100A 8-24S "100 Balance" Active Balance BMS
 
 > [!CAUTION]
 > This is not tested thorougly (yet), use at your own risk and check if data is plausible!

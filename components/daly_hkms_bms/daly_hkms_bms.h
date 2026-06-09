@@ -218,6 +218,8 @@ class DalyHkmsBmsComponent : public Component {
   SUB_BINARY_SENSOR(has_warnings)
   SUB_BINARY_SENSOR(has_errors)
 
+  SUB_BINARY_SENSOR(canbus_connectivity)
+
   void set_cell_balancing_sensor(uint16_t cell, binary_sensor::BinarySensor *sensor) {
     if (cell > this->cell_balancing_sensors_max_)
       this->cell_balancing_sensors_max_ = cell;
@@ -232,6 +234,8 @@ class DalyHkmsBmsComponent : public Component {
   void handle_msg_fault_info_1_(const std::vector<uint8_t> &message);
 
   uint8_t fault_status_[DALY_CAN_FAULT_STATUS_LEN] = {};
+  uint32_t last_update_{0};
+  bool canbus_connectivity_{true};
 
   uint8_t daly_address_;
   DalyHkmsBmsType bms_type_;

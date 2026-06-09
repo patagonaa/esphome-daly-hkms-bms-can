@@ -1,6 +1,7 @@
 import esphome.codegen as cg
 import esphome.config_validation as cv
 from esphome.components import binary_sensor
+from esphome.const import DEVICE_CLASS_CONNECTIVITY, ENTITY_CATEGORY_DIAGNOSTIC
 
 from . import DalyHkmsBmsComponent, CONF_DALY_HKMS_BMS_ID, MAX_CELL_NUMBER
 
@@ -16,6 +17,7 @@ CONF_ERROR_DISCHARGE_MOS_TEMPERATURE_DETECT = "error_discharge_mos_temperature_d
 CONF_ERROR_SHORT_CIRCUIT = "error_short_circuit"
 CONF_HAS_WARNINGS = "has_warnings"
 CONF_HAS_ERRORS = "has_errors"
+CONF_CANBUS_CONNECTIVITY = "canbus_connectivity"
 
 ICON_BATTERY_ARROW_UP = "mdi:battery-arrow-up"
 ICON_BATTERY_ARROW_DOWN = "mdi:battery-arrow-down"
@@ -35,6 +37,7 @@ TYPES = [
     CONF_ERROR_SHORT_CIRCUIT,
     CONF_HAS_WARNINGS,
     CONF_HAS_ERRORS,
+    CONF_CANBUS_CONNECTIVITY,
 ]
 
 def get_cell_balancing_key(cell):
@@ -69,6 +72,7 @@ CONFIG_SCHEMA = cv.All(
             cv.Optional(CONF_ERROR_SHORT_CIRCUIT): binary_sensor.binary_sensor_schema(icon=ICON_BATTERY_ALERT),
             cv.Optional(CONF_HAS_WARNINGS): binary_sensor.binary_sensor_schema(icon=ICON_BATTERY_ALERT),
             cv.Optional(CONF_HAS_ERRORS): binary_sensor.binary_sensor_schema(icon=ICON_BATTERY_ALERT),
+            cv.Optional(CONF_CANBUS_CONNECTIVITY): binary_sensor.binary_sensor_schema(device_class=DEVICE_CLASS_CONNECTIVITY, entity_category=ENTITY_CATEGORY_DIAGNOSTIC),
         }
     )
     .extend(get_cell_balancing_schema())

@@ -133,6 +133,8 @@ binary_sensor:
       name: "BMS has warnings"
     has_errors:
       name: "BMS has errors"
+    canbus_connectivity:
+      name: "BMS canbus connectivity"
 ```
 
 #### Options:
@@ -144,6 +146,7 @@ binary_sensor:
 - **precharging_mos_enabled**: BMS precharging MOS status.
 - **has_warnings**: BMS warning status.
 - **has_errors**: BMS error status.
+- **canbus_connectivity**: BMS CAN connectivity status ("on" if the BMS is currently responding to data requests).
 - **error_charge_mos_overtemperature**
 - **error_charge_mos_temperature_detect**
 - **error_discharge_mos_overtemperature**
@@ -234,6 +237,8 @@ binary_sensor:
       name: "BMS charging FET enabled"
     discharging_mos_enabled:
       name: "BMS discharging FET enabled"
+    canbus_connectivity:
+      name: "BMS canbus connectivity"
 
 switch:
   - platform: daly_hkms_bms

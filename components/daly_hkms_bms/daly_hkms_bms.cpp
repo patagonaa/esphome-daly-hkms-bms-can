@@ -12,6 +12,8 @@ namespace daly_hkms_bms {
 
 static const char *const TAG = "daly_hkms_bms";
 
+static const uint32_t DALY_CAN_TIMEOUT_MS = 1000;
+
 DalyHkmsBmsComponent::DalyHkmsBmsComponent(canbus::Canbus *canbus) { this->canbus = canbus; }
 
 void DalyHkmsBmsComponent::setup() {
@@ -23,9 +25,26 @@ void DalyHkmsBmsComponent::setup() {
 
   // needs to be sent regularly so daly bms sends periodic data
   this->set_interval("request_data", 2000, [this]() { this->canbus->send_data(0x400FF80, true, false, {0, 0, 0, 0, 0, 0, 0, 0}); });
+
+  // give ESPHome some time to settle before throwing warnings
+  this->last_update_ = millis() + 5000;
 }
 
 void DalyHkmsBmsComponent::loop() {
+  bool canbus_connectivity = millis() < this->last_update_ + DALY_CAN_TIMEOUT_MS;
+  if (canbus_connectivity != this->canbus_connectivity_) {
+    this->canbus_connectivity_ = canbus_connectivity;
+#ifdef USE_BINARY_SENSOR
+    publish_sensor_state_(this->canbus_connectivity_binary_sensor_, canbus_connectivity);
+#endif
+    if (!canbus_connectivity) {
+      ESP_LOGW(TAG, "BMS %d: no response after %d ms", this->daly_address_, DALY_CAN_TIMEOUT_MS);
+      this->status_set_warning(LOG_STR("BMS read timeout"));
+    } else {
+      ESP_LOGW(TAG, "BMS %d: available again", this->daly_address_);
+      this->status_clear_warning();
+    }
+  }
 }
 
 void DalyHkmsBmsComponent::on_frame(uint32_t can_id, bool extended_id, bool rtr, const std::vector<uint8_t> &message) {
@@ -40,6 +59,7 @@ void DalyHkmsBmsComponent::on_frame(uint32_t can_id, bool extended_id, bool rtr,
 
   uint16_t register_id = (can_id & 0xFFF0000) >> 16;
 
+  this->last_update_ = millis();
   ESP_LOGV(TAG, "BMS %d: got register %x", this->daly_address_, register_id);
 
   switch (register_id)

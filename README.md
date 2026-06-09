@@ -260,7 +260,7 @@ The writable registers are not made public by DALY themselves, they can however 
 Be aware that the ids differ between `BMS_TYPE_01` ("Energy Storage") and `BMS_TYPE_02` ("Power").
 
 Some maybe useful registers (type 1 / 2):
-- `0x181E` / `0x161E` SoC * 10 (100% * 10 = value 1000)
+- `0x181E` / `0x161E` SoC * 10 (100% * 10 = value 1000 = 0x03E8)
 
 Example:  
 To reset the SoC to 100% every 30 seconds if the BMS total voltage is above 51V, you can do:
@@ -275,7 +275,7 @@ interval:
               above: 51.0
           then:
             - lambda: |-
-                id(bms_1).write_register(0x161E, 1000);
+                id(bms_1).write_register(0x161E, {0x03, 0xE8});
 ```
 This will prevent the BMS SoC from dropping while the battery is fully charged. This may be necessary because the BMS only resets the SoC to 100% when switching off due to cell overvoltage, which either means overcharging the cells, or setting the limit unnecessarily low so it can be hit during normal charging.
 

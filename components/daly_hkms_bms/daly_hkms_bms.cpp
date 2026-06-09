@@ -168,13 +168,13 @@ void DalyHkmsBmsComponent::on_frame(uint32_t can_id, bool extended_id, bool rtr,
 }
 
 void DalyHkmsBmsComponent::handle_msg_cell_volts_(const std::vector<uint8_t> &message) {
-  uint8_t msg_num = message[0];
+  uint8_t page_num = message[0];
 
 #ifdef USE_SENSOR
   for (size_t i = 0; i < 3; i++)
   {
     uint16_t mv = (message[1 + i * 2] << 8) | message[2 + i * 2];
-    size_t cell_num = msg_num*3 + i;
+    size_t cell_num = (page_num-1)*3 + i;
     if (cell_num < this->cell_voltage_sensors_max_) {
       publish_sensor_state_(this->cell_voltage_sensors_[cell_num], mv, 0, 0.001);
     }
@@ -183,13 +183,13 @@ void DalyHkmsBmsComponent::handle_msg_cell_volts_(const std::vector<uint8_t> &me
 }
 
 void DalyHkmsBmsComponent::handle_msg_cell_temps_(const std::vector<uint8_t> &message) {
-  uint8_t msg_num = message[0];
+  uint8_t page_num = message[0];
 
 #ifdef USE_SENSOR
   for (size_t i = 0; i < 7; i++)
   {
     uint16_t val = message[1 + i];
-    size_t temp_num = msg_num*7 + i;
+    size_t temp_num = (page_num-1)*7 + i;
     if (temp_num < this->temperature_sensors_max_) {
       publish_sensor_state_(this->temperature_sensors_[temp_num], val, -40, 1);
     }
@@ -198,13 +198,13 @@ void DalyHkmsBmsComponent::handle_msg_cell_temps_(const std::vector<uint8_t> &me
 }
 
 void DalyHkmsBmsComponent::handle_msg_fault_info_1_(const std::vector<uint8_t> &message) {
-  uint8_t msg_num = message[0];
+  uint8_t page_num = message[0];
 
   static_assert(DALY_CAN_FAULT_STATUS_LEN == 14);
-  if (msg_num == 1) {
+  if (page_num == 1) {
     std::memcpy(this->fault_status_, message.data() + 1, 7);
   }
-  if (msg_num == 2) {
+  if (page_num == 2) {
     std::memcpy(this->fault_status_ + 7, message.data() + 1, 7);
   }
 

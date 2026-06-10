@@ -98,11 +98,11 @@ void DalyHkmsBmsComponent::on_frame(uint32_t can_id, bool extended_id, bool rtr,
     break;
 
   case DALY_CAN_CELL_TEMP_STATS:
-    publish_sensor_state_(this->max_temperature_sensor_, (message[0] << 8) | message[1], 0, 0.001);
-    publish_sensor_state_(this->max_temperature_probe_number_sensor_, message[2], 0, 1);
+    publish_sensor_state_(this->max_temperature_sensor_, message[0], -40, 1);
+    publish_sensor_state_(this->max_temperature_probe_number_sensor_, message[1], 0, 1);
 
-    publish_sensor_state_(this->min_temperature_sensor_, (message[3] << 8) | message[4], 0, 0.001);
-    publish_sensor_state_(this->min_temperature_probe_number_sensor_, message[5], 0, 1);
+    publish_sensor_state_(this->min_temperature_sensor_, message[2], -40, 1);
+    publish_sensor_state_(this->min_temperature_probe_number_sensor_, message[3], 0, 1);
     
     // publish_sensor_state_(this->delta_temperature_sensor_, (message[6] << 8) | message[7], 0, 0.001);
     break;

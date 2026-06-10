@@ -6,9 +6,6 @@ Tested with:
 - 100A 15S K-Series BMS
 - 100A 8-24S "100 Balance" Active Balance BMS
 
-> [!CAUTION]
-> This is not tested thorougly (yet), use at your own risk and check if data is plausible!
-
 Also see https://github.com/syssi/esphome-daly-bms for a similar component that uses BLE.
 
 ## Configuration
@@ -73,6 +70,8 @@ sensor:
 - **cycles**: The number of charge cycles of the battery.
 - **balance_current** (not supported on all BMS versions)
 - **power**: Power (positive when charging, negative when discharging)
+- **charge_power**: Charge power (always positive)
+- **discharge_power**: Discharge power (always positive)
 - **energy**: (not supported on all BMS versions)
 - **temperature_mos**: The BMS MOSFET temperature.
 - **temperature_board**: The BMS PCB temperature (might not be available on all models).

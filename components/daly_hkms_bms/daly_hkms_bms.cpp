@@ -75,13 +75,23 @@ void DalyHkmsBmsComponent::on_frame(uint32_t can_id, bool extended_id, bool rtr,
 
 #ifdef USE_SENSOR
   case DALY_CAN_INFO_0:
-    publish_sensor_state_(this->voltage_sensor_, (message[0] << 8) | message[1], 0, 0.1);
-    publish_sensor_state_(this->current_sensor_, (message[2] << 8) | message[3], -30000, 0.1);
+  {
+    uint16_t volt = (message[0] << 8) | message[1]; // 1/10 volt
+    int16_t curr = ((message[2] << 8) | message[3]) - 30000; // 1/10 amp
+
+    publish_sensor_state_(this->voltage_sensor_, volt, 0, 0.1);
+    publish_sensor_state_(this->current_sensor_, curr, 0, 0.1);
+
+    int32_t pwr = volt * curr; // 1/100 watt
+    publish_sensor_state_(this->power_sensor_, pwr, 0, 0.01);
+    publish_sensor_state_(this->charge_power_sensor_, std::max<int32_t>(pwr, 0), 0, 0.01);
+    publish_sensor_state_(this->discharge_power_sensor_, -std::min<int32_t>(pwr, 0), 0, 0.01);
+
     publish_sensor_state_(this->battery_level_sensor_, (message[4] << 8) | message[5], 0, 0.1);
     break;
+  }
 
   case DALY_CAN_INFO_1:
-    publish_sensor_state_(this->power_sensor_, (message[0] << 8) | message[1], 0, 1);
     publish_sensor_state_(this->energy_sensor_, (message[2] << 8) | message[3], 0, 1);
     publish_sensor_state_(this->temperature_mos_sensor_, message[4], -40, 1);
     publish_sensor_state_(this->temperature_board_sensor_, message[5], -40, 1);
@@ -98,11 +108,11 @@ void DalyHkmsBmsComponent::on_frame(uint32_t can_id, bool extended_id, bool rtr,
     break;
 
   case DALY_CAN_CELL_TEMP_STATS:
-    publish_sensor_state_(this->max_temperature_sensor_, (message[0] << 8) | message[1], 0, 0.001);
-    publish_sensor_state_(this->max_temperature_probe_number_sensor_, message[2], 0, 1);
+    publish_sensor_state_(this->max_temperature_sensor_, message[0], -40, 1);
+    publish_sensor_state_(this->max_temperature_probe_number_sensor_, message[1], 0, 1);
 
-    publish_sensor_state_(this->min_temperature_sensor_, (message[3] << 8) | message[4], 0, 0.001);
-    publish_sensor_state_(this->min_temperature_probe_number_sensor_, message[5], 0, 1);
+    publish_sensor_state_(this->min_temperature_sensor_, message[2], -40, 1);
+    publish_sensor_state_(this->min_temperature_probe_number_sensor_, message[3], 0, 1);
     
     // publish_sensor_state_(this->delta_temperature_sensor_, (message[6] << 8) | message[7], 0, 0.001);
     break;

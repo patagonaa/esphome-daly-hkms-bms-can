@@ -244,7 +244,7 @@ class DalyHkmsBmsComponent : public Component {
   sensor::Sensor *cell_voltage_sensors_[DALY_CAN_MAX_CELL_COUNT]{};
   sensor::Sensor *temperature_sensors_[DALY_CAN_MAX_TEMP_COUNT]{};
 
-  void publish_sensor_state_(sensor::Sensor *sensor, int32_t value, int16_t offset, float factor, int32_t unavailable_value = -1) {
+  void publish_sensor_state_(sensor::Sensor *sensor, int32_t value, int16_t offset, float factor, int32_t unavailable_value = INT32_MIN) {
     if (sensor == nullptr)
       return;
     float out_value = value == unavailable_value ? NAN : (value + offset) * factor;

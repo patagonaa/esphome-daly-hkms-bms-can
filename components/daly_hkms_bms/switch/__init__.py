@@ -4,7 +4,7 @@ from esphome.components import switch
 from esphome.const import (
     CONF_ID,
 )
-
+from esphome.types import ConfigType
 from .. import DalyHkmsBmsComponent, daly_hkms_bms_ns, CONF_DALY_HKMS_BMS_ID
 
 ICON_BATTERY_ARROW_UP = "mdi:battery-arrow-up"
@@ -21,14 +21,22 @@ CONFIG_SCHEMA = cv.All(
     cv.Schema(
         {
             cv.GenerateID(CONF_DALY_HKMS_BMS_ID): cv.use_id(DalyHkmsBmsComponent),
-            cv.Optional(CONF_CHARGE_MOS): switch.switch_schema(DalyHkmsBmsSwitch, default_restore_mode="DISABLED", icon=ICON_BATTERY_ARROW_UP),
-            cv.Optional(CONF_DISCHARGE_MOS): switch.switch_schema(DalyHkmsBmsSwitch, default_restore_mode="DISABLED", icon=ICON_BATTERY_ARROW_DOWN),
+            cv.Optional(CONF_CHARGE_MOS): switch.switch_schema(
+                DalyHkmsBmsSwitch,
+                default_restore_mode="DISABLED",
+                icon=ICON_BATTERY_ARROW_UP,
+            ),
+            cv.Optional(CONF_DISCHARGE_MOS): switch.switch_schema(
+                DalyHkmsBmsSwitch,
+                default_restore_mode="DISABLED",
+                icon=ICON_BATTERY_ARROW_DOWN,
+            ),
         }
     ).extend(cv.COMPONENT_SCHEMA)
 )
 
 
-async def to_code(config):
+async def to_code(config: ConfigType) -> None:
     hub = await cg.get_variable(config[CONF_DALY_HKMS_BMS_ID])
     if CONF_CHARGE_MOS in config:
         conf = config[CONF_CHARGE_MOS]

@@ -2,6 +2,7 @@ import esphome.codegen as cg
 import esphome.config_validation as cv
 from esphome.components.canbus import CanbusComponent
 from esphome.const import CONF_ID, CONF_ADDRESS
+from esphome.types import ConfigType
 
 CODEOWNERS = ["@patagonaa"]
 MULTI_CONF = True
@@ -15,6 +16,7 @@ MAX_CELL_NUMBER = 48
 MAX_TEMP_NUMBER = 8
 
 daly_hkms_bms_ns = cg.esphome_ns.namespace("daly_hkms_bms")
+
 DalyHkmsBmsComponent = daly_hkms_bms_ns.class_(
     "DalyHkmsBmsComponent", cg.Component
 )
@@ -36,7 +38,7 @@ CONFIG_SCHEMA = cv.Schema(
 )
 
 
-async def to_code(config):
+async def to_code(config: ConfigType) -> None:
     canbus = await cg.get_variable(config[CONF_CANBUS_ID])
     canbus_var = cg.new_Pvariable(config[CONF_ID], canbus)
     cg.add(canbus_var.set_daly_address(config[CONF_ADDRESS]))

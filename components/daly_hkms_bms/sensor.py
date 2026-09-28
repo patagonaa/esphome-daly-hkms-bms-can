@@ -31,6 +31,8 @@ from esphome.const import (
     ICON_THERMOMETER,
     ICON_GAUGE,
 )
+from esphome.cpp_generator import MockObj
+from esphome.types import ConfigType
 from . import MAX_CELL_NUMBER, MAX_TEMP_NUMBER, DalyHkmsBmsComponent, CONF_DALY_HKMS_BMS_ID
 
 CONF_MAX_CELL_VOLTAGE = "max_cell_voltage"
@@ -138,26 +140,27 @@ CELL_VOLTAGE_SCHEMA = sensor.sensor_schema(
 )
 
 
-def get_cell_voltage_key(cell):
+def get_cell_voltage_key(cell: int) -> str:
     return f"cell_{cell}_voltage"
 
 
-def get_cell_voltages_schema():
+def get_cell_voltages_schema() -> cv.Schema:
     schema_obj = {}
     for i in range(1, MAX_CELL_NUMBER + 1):
         schema_obj[cv.Optional(get_cell_voltage_key(i))] = CELL_VOLTAGE_SCHEMA
     return cv.Schema(schema_obj)
 
 
-def get_temperature_sensor_key(temp):
+def get_temperature_sensor_key(temp: int) -> str:
     return f"temperature_{temp}"
 
 
-def get_temperature_sensors_schema():
+def get_temperature_sensors_schema() -> cv.Schema:
     schema_obj = {}
     for i in range(1, MAX_TEMP_NUMBER + 1):
         schema_obj[cv.Optional(get_temperature_sensor_key(i))] = TEMPERATURE_SENSOR_SCHEMA
     return cv.Schema(schema_obj)
+
 
 ALARM_LEVEL_SCHEMA = sensor.sensor_schema(
     unit_of_measurement=UNIT_EMPTY,
@@ -327,25 +330,27 @@ CONFIG_SCHEMA = (
 )
 
 
-async def setup_conf(config, key, hub):
+async def setup_conf(config: ConfigType, key: str, hub: MockObj) -> None:
     if sensor_config := config.get(key):
         sens = await sensor.new_sensor(sensor_config)
         cg.add(getattr(hub, f"set_{key}_sensor")(sens))
 
 
-async def setup_cell_voltage_conf(config, cell, hub):
+async def setup_cell_voltage_conf(config: ConfigType, cell: str, hub: MockObj) -> None:
     key = get_cell_voltage_key(cell)
     if sensor_config := config.get(key):
         sens = await sensor.new_sensor(sensor_config)
         cg.add(hub.set_cell_voltage_sensor(cell, sens))
 
-async def setup_temp_sensor_conf(config, num, hub):
+
+async def setup_temp_sensor_conf(config: ConfigType, num: int, hub: MockObj) -> None:
     key = get_temperature_sensor_key(num)
     if sensor_config := config.get(key):
         sens = await sensor.new_sensor(sensor_config)
         cg.add(hub.set_temperature_sensor(num, sens))
 
-async def to_code(config):
+
+async def to_code(config: ConfigType) -> None:
     hub = await cg.get_variable(config[CONF_DALY_HKMS_BMS_ID])
     for i in range(1, MAX_CELL_NUMBER + 1):
         await setup_cell_voltage_conf(config, i, hub)

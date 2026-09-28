@@ -2,7 +2,8 @@ import esphome.codegen as cg
 import esphome.config_validation as cv
 from esphome.components import binary_sensor
 from esphome.const import DEVICE_CLASS_CONNECTIVITY, ENTITY_CATEGORY_DIAGNOSTIC
-
+from esphome.cpp_generator import MockObj
+from esphome.types import ConfigType
 from . import DalyHkmsBmsComponent, CONF_DALY_HKMS_BMS_ID, MAX_CELL_NUMBER
 
 CONF_CHARGING_MOS_ENABLED = "charging_mos_enabled"
@@ -40,39 +41,63 @@ TYPES = [
     CONF_CANBUS_CONNECTIVITY,
 ]
 
-def get_cell_balancing_key(cell):
+
+def get_cell_balancing_key(cell: int) -> str:
     return f"cell_{cell}_balancing"
+
 
 CELL_BALANCING_SCHEMA = binary_sensor.binary_sensor_schema(icon=ICON_SCALE_BALANCE)
 
-def get_cell_balancing_schema():
+
+def get_cell_balancing_schema() -> cv.Schema:
     schema_obj = {}
     for i in range(1, MAX_CELL_NUMBER + 1):
         schema_obj[cv.Optional(get_cell_balancing_key(i))] = CELL_BALANCING_SCHEMA
     return cv.Schema(schema_obj)
 
+
 CONFIG_SCHEMA = cv.All(
     cv.Schema(
         {
             cv.GenerateID(CONF_DALY_HKMS_BMS_ID): cv.use_id(DalyHkmsBmsComponent),
-            cv.Optional(
-                CONF_CHARGING_MOS_ENABLED
-            ): binary_sensor.binary_sensor_schema(icon=ICON_BATTERY_ARROW_UP),
-            cv.Optional(
-                CONF_DISCHARGING_MOS_ENABLED
-            ): binary_sensor.binary_sensor_schema(icon=ICON_BATTERY_ARROW_DOWN),
-            cv.Optional(
-                CONF_PRECHARGING_MOS_ENABLED
-            ): binary_sensor.binary_sensor_schema(icon=ICON_SLOPE_UPHILL),
-            cv.Optional(CONF_BALANCING_ACTIVE): binary_sensor.binary_sensor_schema(icon=ICON_SCALE_BALANCE),
-            cv.Optional(CONF_ERROR_CHARGE_MOS_OVERTEMPERATURE): binary_sensor.binary_sensor_schema(icon=ICON_BATTERY_ALERT),
-            cv.Optional(CONF_ERROR_CHARGE_MOS_TEMPERATURE_DETECT): binary_sensor.binary_sensor_schema(icon=ICON_BATTERY_ALERT),
-            cv.Optional(CONF_ERROR_DISCHARGE_MOS_OVERTEMPERATURE): binary_sensor.binary_sensor_schema(icon=ICON_BATTERY_ALERT),
-            cv.Optional(CONF_ERROR_DISCHARGE_MOS_TEMPERATURE_DETECT): binary_sensor.binary_sensor_schema(icon=ICON_BATTERY_ALERT),
-            cv.Optional(CONF_ERROR_SHORT_CIRCUIT): binary_sensor.binary_sensor_schema(icon=ICON_BATTERY_ALERT),
-            cv.Optional(CONF_HAS_WARNINGS): binary_sensor.binary_sensor_schema(icon=ICON_BATTERY_ALERT),
-            cv.Optional(CONF_HAS_ERRORS): binary_sensor.binary_sensor_schema(icon=ICON_BATTERY_ALERT),
-            cv.Optional(CONF_CANBUS_CONNECTIVITY): binary_sensor.binary_sensor_schema(device_class=DEVICE_CLASS_CONNECTIVITY, entity_category=ENTITY_CATEGORY_DIAGNOSTIC),
+            cv.Optional(CONF_CHARGING_MOS_ENABLED): binary_sensor.binary_sensor_schema(
+                icon=ICON_BATTERY_ARROW_UP
+            ),
+            cv.Optional(CONF_DISCHARGING_MOS_ENABLED): binary_sensor.binary_sensor_schema(
+                icon=ICON_BATTERY_ARROW_DOWN
+            ),
+            cv.Optional(CONF_PRECHARGING_MOS_ENABLED): binary_sensor.binary_sensor_schema(
+                icon=ICON_SLOPE_UPHILL
+            ),
+            cv.Optional(CONF_BALANCING_ACTIVE): binary_sensor.binary_sensor_schema(
+                icon=ICON_SCALE_BALANCE
+            ),
+            cv.Optional(CONF_ERROR_CHARGE_MOS_OVERTEMPERATURE): binary_sensor.binary_sensor_schema(
+                icon=ICON_BATTERY_ALERT
+            ),
+            cv.Optional(CONF_ERROR_CHARGE_MOS_TEMPERATURE_DETECT): binary_sensor.binary_sensor_schema(
+                icon=ICON_BATTERY_ALERT
+            ),
+            cv.Optional(CONF_ERROR_DISCHARGE_MOS_OVERTEMPERATURE): binary_sensor.binary_sensor_schema(
+                icon=ICON_BATTERY_ALERT
+            ),
+            cv.Optional(CONF_ERROR_DISCHARGE_MOS_TEMPERATURE_DETECT): binary_sensor.binary_sensor_schema(
+                icon=ICON_BATTERY_ALERT
+            ),
+            cv.Optional(CONF_ERROR_SHORT_CIRCUIT): binary_sensor.binary_sensor_schema(
+                icon=ICON_BATTERY_ALERT
+            ),
+            cv.Optional(CONF_HAS_WARNINGS): binary_sensor.binary_sensor_schema(
+                icon=ICON_BATTERY_ALERT
+            ),
+            cv.Optional(CONF_HAS_ERRORS): binary_sensor.binary_sensor_schema(
+                icon=ICON_BATTERY_ALERT
+            ),
+            cv.Optional(CONF_CANBUS_CONNECTIVITY):
+                binary_sensor.binary_sensor_schema(
+                    device_class=DEVICE_CLASS_CONNECTIVITY,
+                    entity_category=ENTITY_CATEGORY_DIAGNOSTIC,
+                ),
         }
     )
     .extend(get_cell_balancing_schema())
@@ -80,18 +105,20 @@ CONFIG_SCHEMA = cv.All(
 )
 
 
-async def setup_conf(config, key, hub):
+async def setup_conf(config: ConfigType, key: str, hub: MockObj) -> None:
     if sensor_config := config.get(key):
         var = await binary_sensor.new_binary_sensor(sensor_config)
         cg.add(getattr(hub, f"set_{key}_binary_sensor")(var))
 
-async def setup_cell_balancing_conf(config, cell, hub):
+
+async def setup_cell_balancing_conf(config: ConfigType, cell: int, hub: MockObj) -> None:
     key = get_cell_balancing_key(cell)
     if sensor_config := config.get(key):
         sens = await binary_sensor.new_binary_sensor(sensor_config)
         cg.add(hub.set_cell_balancing_sensor(cell, sens))
 
-async def to_code(config):
+
+async def to_code(config: ConfigType) -> None:
     hub = await cg.get_variable(config[CONF_DALY_HKMS_BMS_ID])
     for key in TYPES:
         await setup_conf(config, key, hub)

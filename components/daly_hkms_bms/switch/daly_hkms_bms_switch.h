@@ -9,7 +9,7 @@
 
 namespace esphome::daly_hkms_bms {
 
-class DalyHkmsBmsSwitch : public switch_::Switch, public Component, public DalyHkmsBmsInput {
+class DalyHkmsBmsSwitch final : public switch_::Switch, public Component, public DalyHkmsBmsInput {
  public:
   void set_parent(DalyHkmsBmsComponent *parent) {
     this->parent_ = parent;

@@ -17,10 +17,10 @@
 
 namespace esphome::daly_hkms_bms {
 
-static const uint8_t DALY_CAN_MAX_CELL_COUNT = 48;
-static const uint8_t DALY_CAN_MAX_TEMP_COUNT = 8;
+static constexpr uint8_t DALY_CAN_MAX_CELL_COUNT = 48;
+static constexpr uint8_t DALY_CAN_MAX_TEMP_COUNT = 8;
 
-static const size_t DALY_CAN_FAULT_STATUS_LEN = 14;
+static constexpr size_t DALY_CAN_FAULT_STATUS_LEN = 14;
 
 class DalyHkmsBmsInput {
   public:
@@ -119,7 +119,7 @@ struct __attribute__((packed)) DalyHkmsStatus
 static_assert(sizeof(DalyHkmsStatus) == DALY_CAN_FAULT_STATUS_LEN);
 
 
-class DalyHkmsBmsComponent : public Component {
+class DalyHkmsBmsComponent final : public Component {
  public:
   DalyHkmsBmsComponent(canbus::Canbus *canbus);
   void setup() override;

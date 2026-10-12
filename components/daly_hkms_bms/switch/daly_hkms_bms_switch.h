@@ -1,13 +1,13 @@
 #pragma once
 
-#include "esphome/core/component.h"
-#include "esphome/components/switch/switch.h"
-#include "../daly_hkms_bms.h"
-
 #include <vector>
 
-namespace esphome {
-namespace daly_hkms_bms {
+#include "esphome/core/component.h"
+#include "esphome/components/switch/switch.h"
+
+#include "../daly_hkms_bms.h"
+
+namespace esphome::daly_hkms_bms {
 
 class DalyHkmsBmsSwitch : public switch_::Switch, public Component, public DalyHkmsBmsInput {
  public:
@@ -44,5 +44,4 @@ class DalyHkmsBmsSwitch : public switch_::Switch, public Component, public DalyH
   };
 };
 
-}  // namespace daly_hkms_bms
-}  // namespace esphome
+}  // namespace esphome::daly_hkms_bms

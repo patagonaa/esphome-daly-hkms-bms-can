@@ -5,8 +5,8 @@ from esphome.const import CONF_ID, CONF_ADDRESS
 from esphome.types import ConfigType
 
 CODEOWNERS = ["@patagonaa"]
-MULTI_CONF = True
 DEPENDENCIES = ["canbus"]
+MULTI_CONF = True
 
 CONF_CANBUS_ID = "canbus_id"
 CONF_DALY_HKMS_BMS_ID = "daly_hkms_bms_id"

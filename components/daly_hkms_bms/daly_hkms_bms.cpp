@@ -1,14 +1,15 @@
 #include "daly_hkms_bms.h"
-#include "daly_hkms_bms_registers.h"
-#include "esphome/core/log.h"
-#include "esphome/core/helpers.h"
 
 #include <cinttypes>
 #include <cstring>
 #include <sstream>
 
-namespace esphome {
-namespace daly_hkms_bms {
+#include "esphome/core/log.h"
+#include "esphome/core/helpers.h"
+
+#include "daly_hkms_bms_registers.h"
+
+namespace esphome::daly_hkms_bms {
 
 static const char *const TAG = "daly_hkms_bms";
 
@@ -36,9 +37,9 @@ void DalyHkmsBmsComponent::loop() {
     this->canbus_connectivity_ = canbus_connectivity;
 #ifdef USE_BINARY_SENSOR
     publish_sensor_state_(this->canbus_connectivity_binary_sensor_, canbus_connectivity);
-#endif
+#endif // USE_BINARY_SENSOR
     if (!canbus_connectivity) {
-      ESP_LOGW(TAG, "BMS %d: no response after %d ms", this->daly_address_, DALY_CAN_TIMEOUT_MS);
+      ESP_LOGW(TAG, "BMS %d: no response after %" PRIu32 " ms", this->daly_address_, DALY_CAN_TIMEOUT_MS);
       this->status_set_warning(LOG_STR("BMS read timeout"));
     } else {
       ESP_LOGW(TAG, "BMS %d: available again", this->daly_address_);
@@ -52,15 +53,15 @@ void DalyHkmsBmsComponent::on_frame(uint32_t can_id, bool extended_id, bool rtr,
     return;
   }
 
-  uint8_t bms_id = can_id & 0x00000FF;
+  uint8_t bms_id = can_id & 0x000000FF;
   if (bms_id != this->daly_address_) {
     return;
   }
 
-  uint16_t register_id = (can_id & 0xFFFF0000) >> 16;
+  uint16_t register_id = (can_id & 0x1FFF0000) >> 16;
 
   this->last_update_ = millis();
-  ESP_LOGD(TAG, "BMS %d: got register %x", this->daly_address_, register_id);
+  ESP_LOGD(TAG, "BMS %d: got register 0x%04" PRIx16, this->daly_address_, register_id);
 
   switch (register_id)
   {
@@ -124,7 +125,7 @@ void DalyHkmsBmsComponent::on_frame(uint32_t can_id, bool extended_id, bool rtr,
     publish_sensor_state_(this->remaining_capacity_sensor_, (message[2] << 24) | (message[3] << 16) | (message[4] << 8) | message[5], 0, 0.001);
     publish_sensor_state_(this->cycles_sensor_, (message[6] << 8) | message[7], 0, 1);
     break;
-#endif
+#endif // USE_SENSOR
 
 #ifdef USE_TEXT_SENSOR
   case DALY_CAN_STATS_1:
@@ -144,7 +145,7 @@ void DalyHkmsBmsComponent::on_frame(uint32_t can_id, bool extended_id, bool rtr,
       }
     }
     break;
-#endif
+#endif // USE_TEXT_SENSOR
 
 #ifdef USE_BINARY_SENSOR
   case DALY_CAN_STATS_0:
@@ -152,7 +153,7 @@ void DalyHkmsBmsComponent::on_frame(uint32_t can_id, bool extended_id, bool rtr,
     publish_sensor_state_(this->discharging_mos_enabled_binary_sensor_, message[1]);
     publish_sensor_state_(this->precharging_mos_enabled_binary_sensor_, message[2]);
     break;
-#endif
+#endif // USE_BINARY_SENSOR
 
   case DALY_CAN_BAL_INFO:
 #ifdef USE_BINARY_SENSOR
@@ -163,10 +164,10 @@ void DalyHkmsBmsComponent::on_frame(uint32_t can_id, bool extended_id, bool rtr,
       size_t bit = i % 8;
       publish_sensor_state_(this->cell_balancing_sensors_[i], message[field] & (1 << bit));
     }
-#endif
+#endif // USE_BINARY_SENSOR
 #ifdef USE_SENSOR
     publish_sensor_state_(this->balance_current_sensor_, (message[2] << 8) | message[3], -30000, 0.001);
-#endif
+#endif // USE_SENSOR
     break;
 
   case DALY_CAN_FAULT_INFO_1:
@@ -190,7 +191,7 @@ void DalyHkmsBmsComponent::handle_msg_cell_volts_(const std::vector<uint8_t> &me
       publish_sensor_state_(this->cell_voltage_sensors_[cell_num], mv, 0, 0.001);
     }
   }
-#endif
+#endif // USE_SENSOR
 }
 
 void DalyHkmsBmsComponent::handle_msg_cell_temps_(const std::vector<uint8_t> &message) {
@@ -205,7 +206,7 @@ void DalyHkmsBmsComponent::handle_msg_cell_temps_(const std::vector<uint8_t> &me
       publish_sensor_state_(this->temperature_sensors_[temp_num], val, -40, 1);
     }
   }
-#endif
+#endif // USE_SENSOR
 }
 
 void DalyHkmsBmsComponent::handle_msg_fault_info_1_(const std::vector<uint8_t> &message) {
@@ -237,7 +238,7 @@ void DalyHkmsBmsComponent::handle_msg_fault_info_1_(const std::vector<uint8_t> &
   publish_sensor_state_(this->alarm_level_soc_low_sensor_, status.lvl_soc_low, 0, 1);
   publish_sensor_state_(this->alarm_level_soh_low_sensor_, status.lvl_soh_low, 0, 1);
   publish_sensor_state_(this->alarm_level_mos_overtemperature_sensor_, status.lvl_mos_overtemp, 0, 1);
-#endif
+#endif // USE_SENSOR
 
   for (auto &input : this->registered_inputs_) {
     uint16_t address = input->get_reg_addr();
@@ -339,7 +340,7 @@ void DalyHkmsBmsComponent::handle_msg_fault_info_1_(const std::vector<uint8_t> &
 
   publish_sensor_state_(this->has_warnings_binary_sensor_, has_warnings || has_errors);
   publish_sensor_state_(this->has_errors_binary_sensor_, has_errors);
-#endif
+#endif // USE_BINARY_SENSOR
 
 #ifdef USE_TEXT_ALERTS
   if (this->alerts_text_sensor_ != nullptr) {
@@ -534,11 +535,19 @@ void DalyHkmsBmsComponent::handle_msg_fault_info_1_(const std::vector<uint8_t> &
 
     this->alerts_text_sensor_->publish_state(alerts_str);
   }
-#endif
+#endif // USE_TEXT_ALERTS
 }
 
 void DalyHkmsBmsComponent::write_register(uint16_t reg, const std::vector<uint8_t> &data) {
-  ESP_LOGD(TAG, "BMS %d: setting %x to state %d", this->daly_address_, reg, data[0]);
+#ifdef ESPHOME_LOG_HAS_DEBUG
+  char buf[17];
+  assert(data.size() <= 8);
+  for (size_t i = 0; i < data.size(); i++) {
+      std::sprintf(buf + i*2, "%02x", data[i]);
+  }
+  ESP_LOGD(TAG, "BMS %d: setting 0x%04" PRIx16 " to state 0x%s", this->daly_address_, reg, buf);
+#endif // ESPHOME_LOG_HAS_DEBUG
+
   uint32_t can_id = (uint32_t(reg) << 16) | (uint32_t(this->daly_address_) << 8) | 0x80;
   this->canbus->send_data(can_id, true, false, data);
 }
@@ -548,5 +557,4 @@ void DalyHkmsBmsComponent::dump_config() {
   ESP_LOGCONFIG(TAG, "  Address: %d", this->daly_address_);
 }
 
-}  // namespace daly_hkms_bms
-}  // namespace esphome
+}  // namespace esphome::daly_hkms_bms

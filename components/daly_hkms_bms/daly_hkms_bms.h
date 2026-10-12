@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 #include "esphome/core/component.h"
 #include "esphome/core/defines.h"
 #ifdef USE_SENSOR
@@ -13,13 +15,10 @@
 #endif
 #include "esphome/components/canbus/canbus.h"
 
-#include <vector>
-
-namespace esphome {
-namespace daly_hkms_bms {
+namespace esphome::daly_hkms_bms {
 
 static const uint8_t DALY_CAN_MAX_CELL_COUNT = 48;
-static const uint8_t DALY_CAN_MAX_TEMP_COUNT = 8; // ???
+static const uint8_t DALY_CAN_MAX_TEMP_COUNT = 8;
 
 static const size_t DALY_CAN_FAULT_STATUS_LEN = 14;
 
@@ -197,12 +196,12 @@ class DalyHkmsBmsComponent : public Component {
   SUB_SENSOR(alarm_level_soc_low)
   SUB_SENSOR(alarm_level_soh_low)
   SUB_SENSOR(alarm_level_mos_overtemperature)
-#endif
+#endif // USE_SENSOR
 
 #ifdef USE_TEXT_SENSOR
   SUB_TEXT_SENSOR(status)
   SUB_TEXT_SENSOR(alerts)
-#endif
+#endif // USE_TEXT_SENSOR
 
 #ifdef USE_BINARY_SENSOR
   SUB_BINARY_SENSOR(charging_mos_enabled)
@@ -225,7 +224,7 @@ class DalyHkmsBmsComponent : public Component {
       this->cell_balancing_sensors_max_ = cell;
     this->cell_balancing_sensors_[cell - 1] = sensor;
   };
-#endif
+#endif // USE_BINARY_SENSOR
 
  protected:
   canbus::Canbus *canbus;
@@ -250,9 +249,9 @@ class DalyHkmsBmsComponent : public Component {
     float out_value = value == unavailable_value ? NAN : (value + offset) * factor;
     sensor->publish_state(out_value);
   }
-#endif
   uint16_t cell_voltage_sensors_max_{0};
   uint16_t temperature_sensors_max_{0};
+#endif // USE_SENSOR
 
 #ifdef USE_BINARY_SENSOR
   binary_sensor::BinarySensor *cell_balancing_sensors_[DALY_CAN_MAX_CELL_COUNT]{};
@@ -262,11 +261,10 @@ class DalyHkmsBmsComponent : public Component {
       sensor->publish_state(state);
     }
   }
-#endif
   uint16_t cell_balancing_sensors_max_{0};
+#endif // USE_BINARY_SENSOR
 
   std::vector<DalyHkmsBmsInput*> registered_inputs_{};
 };
 
-}  // namespace daly_hkms_bms
-}  // namespace esphome
+}  // namespace esphome::daly_hkms_bms

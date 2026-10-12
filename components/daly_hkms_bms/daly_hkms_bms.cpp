@@ -13,7 +13,7 @@ namespace esphome::daly_hkms_bms {
 
 static const char *const TAG = "daly_hkms_bms";
 
-static const uint32_t DALY_CAN_TIMEOUT_MS = 1000;
+static constexpr uint32_t DALY_CAN_TIMEOUT_MS = 1000;
 
 DalyHkmsBmsComponent::DalyHkmsBmsComponent(canbus::Canbus *canbus) { this->canbus = canbus; }
 

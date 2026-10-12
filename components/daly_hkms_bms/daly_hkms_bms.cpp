@@ -11,7 +11,7 @@
 
 namespace esphome::daly_hkms_bms {
 
-static const char *const TAG = "daly_hkms_bms";
+ESPHOME_LOG_TAG(TAG, "daly_hkms_bms");
 
 static const uint32_t DALY_CAN_TIMEOUT_MS = 1000;
 

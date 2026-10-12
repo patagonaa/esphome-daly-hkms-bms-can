@@ -36,7 +36,7 @@ void DalyHkmsBmsComponent::loop() {
   if (canbus_connectivity != this->canbus_connectivity_) {
     this->canbus_connectivity_ = canbus_connectivity;
 #ifdef USE_BINARY_SENSOR
-    publish_sensor_state_(this->canbus_connectivity_binary_sensor_, canbus_connectivity);
+    this->publish_sensor_state_(this->canbus_connectivity_binary_sensor_, canbus_connectivity);
 #endif // USE_BINARY_SENSOR
     if (!canbus_connectivity) {
       ESP_LOGW(TAG, "BMS %d: no response after %" PRIu32 " ms", this->daly_address_, DALY_CAN_TIMEOUT_MS);
@@ -67,11 +67,11 @@ void DalyHkmsBmsComponent::on_frame(uint32_t can_id, bool extended_id, bool rtr,
   {
   case DALY_CAN_CELL_VOLTS:
   case DALY_CAN_CELL_VOLTS_ALT:
-    handle_msg_cell_volts_(message);
+    this->handle_msg_cell_volts_(message);
     break;
 
   case DALY_CAN_CELL_TEMPS:
-    handle_msg_cell_temps_(message);
+    this->handle_msg_cell_temps_(message);
     break;
 
 #ifdef USE_SENSOR
@@ -80,50 +80,50 @@ void DalyHkmsBmsComponent::on_frame(uint32_t can_id, bool extended_id, bool rtr,
     uint16_t volt = (message[0] << 8) | message[1]; // 1/10 volt
     int16_t curr = ((message[2] << 8) | message[3]) - 30000; // 1/10 amp
 
-    publish_sensor_state_(this->voltage_sensor_, volt, 0, 0.1);
-    publish_sensor_state_(this->current_sensor_, curr, 0, 0.1);
+    this->publish_sensor_state_(this->voltage_sensor_, volt, 0, 0.1);
+    this->publish_sensor_state_(this->current_sensor_, curr, 0, 0.1);
 
     int32_t pwr = volt * curr; // 1/100 watt
-    publish_sensor_state_(this->power_sensor_, pwr, 0, 0.01);
-    publish_sensor_state_(this->charge_power_sensor_, std::max<int32_t>(pwr, 0), 0, 0.01);
-    publish_sensor_state_(this->discharge_power_sensor_, -std::min<int32_t>(pwr, 0), 0, 0.01);
+    this->publish_sensor_state_(this->power_sensor_, pwr, 0, 0.01);
+    this->publish_sensor_state_(this->charge_power_sensor_, std::max<int32_t>(pwr, 0), 0, 0.01);
+    this->publish_sensor_state_(this->discharge_power_sensor_, -std::min<int32_t>(pwr, 0), 0, 0.01);
 
-    publish_sensor_state_(this->battery_level_sensor_, (message[4] << 8) | message[5], 0, 0.1);
+    this->publish_sensor_state_(this->battery_level_sensor_, (message[4] << 8) | message[5], 0, 0.1);
     break;
   }
 
   case DALY_CAN_INFO_1:
-    publish_sensor_state_(this->energy_sensor_, (message[2] << 8) | message[3], 0, 1);
-    publish_sensor_state_(this->temperature_mos_sensor_, message[4], -40, 1);
-    publish_sensor_state_(this->temperature_board_sensor_, message[5], -40, 1);
+    this->publish_sensor_state_(this->energy_sensor_, (message[2] << 8) | message[3], 0, 1);
+    this->publish_sensor_state_(this->temperature_mos_sensor_, message[4], -40, 1);
+    this->publish_sensor_state_(this->temperature_board_sensor_, message[5], -40, 1);
     break;
 
   case DALY_CAN_CELL_VOLT_STATS:
-    publish_sensor_state_(this->max_cell_voltage_sensor_, (message[0] << 8) | message[1], 0, 0.001);
-    publish_sensor_state_(this->max_cell_voltage_number_sensor_, message[2], 0, 1);
+    this->publish_sensor_state_(this->max_cell_voltage_sensor_, (message[0] << 8) | message[1], 0, 0.001);
+    this->publish_sensor_state_(this->max_cell_voltage_number_sensor_, message[2], 0, 1);
 
-    publish_sensor_state_(this->min_cell_voltage_sensor_, (message[3] << 8) | message[4], 0, 0.001);
-    publish_sensor_state_(this->min_cell_voltage_number_sensor_, message[5], 0, 1);
+    this->publish_sensor_state_(this->min_cell_voltage_sensor_, (message[3] << 8) | message[4], 0, 0.001);
+    this->publish_sensor_state_(this->min_cell_voltage_number_sensor_, message[5], 0, 1);
 
-    publish_sensor_state_(this->delta_cell_voltage_sensor_, (message[6] << 8) | message[7], 0, 0.001);
+    this->publish_sensor_state_(this->delta_cell_voltage_sensor_, (message[6] << 8) | message[7], 0, 0.001);
     break;
 
   case DALY_CAN_CELL_TEMP_STATS:
-    publish_sensor_state_(this->max_temperature_sensor_, message[0], -40, 1);
-    publish_sensor_state_(this->max_temperature_probe_number_sensor_, message[1], 0, 1);
+    this->publish_sensor_state_(this->max_temperature_sensor_, message[0], -40, 1);
+    this->publish_sensor_state_(this->max_temperature_probe_number_sensor_, message[1], 0, 1);
 
-    publish_sensor_state_(this->min_temperature_sensor_, message[2], -40, 1);
-    publish_sensor_state_(this->min_temperature_probe_number_sensor_, message[3], 0, 1);
+    this->publish_sensor_state_(this->min_temperature_sensor_, message[2], -40, 1);
+    this->publish_sensor_state_(this->min_temperature_probe_number_sensor_, message[3], 0, 1);
     
     // publish_sensor_state_(this->delta_temperature_sensor_, (message[6] << 8) | message[7], 0, 0.001);
     break;
 
   case DALY_CAN_STATS_2:
-    publish_sensor_state_(this->cells_number_sensor_, message[0], 0, 1);
-    publish_sensor_state_(this->temps_number_sensor_, message[1], 0, 1);
+    this->publish_sensor_state_(this->cells_number_sensor_, message[0], 0, 1);
+    this->publish_sensor_state_(this->temps_number_sensor_, message[1], 0, 1);
 
-    publish_sensor_state_(this->remaining_capacity_sensor_, (message[2] << 24) | (message[3] << 16) | (message[4] << 8) | message[5], 0, 0.001);
-    publish_sensor_state_(this->cycles_sensor_, (message[6] << 8) | message[7], 0, 1);
+    this->publish_sensor_state_(this->remaining_capacity_sensor_, (message[2] << 24) | (message[3] << 16) | (message[4] << 8) | message[5], 0, 0.001);
+    this->publish_sensor_state_(this->cycles_sensor_, (message[6] << 8) | message[7], 0, 1);
     break;
 #endif // USE_SENSOR
 
@@ -149,29 +149,29 @@ void DalyHkmsBmsComponent::on_frame(uint32_t can_id, bool extended_id, bool rtr,
 
 #ifdef USE_BINARY_SENSOR
   case DALY_CAN_STATS_0:
-    publish_sensor_state_(this->charging_mos_enabled_binary_sensor_, message[0]);
-    publish_sensor_state_(this->discharging_mos_enabled_binary_sensor_, message[1]);
-    publish_sensor_state_(this->precharging_mos_enabled_binary_sensor_, message[2]);
+    this->publish_sensor_state_(this->charging_mos_enabled_binary_sensor_, message[0]);
+    this->publish_sensor_state_(this->discharging_mos_enabled_binary_sensor_, message[1]);
+    this->publish_sensor_state_(this->precharging_mos_enabled_binary_sensor_, message[2]);
     break;
 #endif // USE_BINARY_SENSOR
 
   case DALY_CAN_BAL_INFO:
 #ifdef USE_BINARY_SENSOR
-    publish_sensor_state_(this->balancing_active_binary_sensor_, message[0] > 0);
+    this->publish_sensor_state_(this->balancing_active_binary_sensor_, message[0] > 0);
 
     for (size_t i = 0; i < DALY_CAN_MAX_CELL_COUNT; i++) {
       size_t field = 4 + i / 8;
       size_t bit = i % 8;
-      publish_sensor_state_(this->cell_balancing_sensors_[i], message[field] & (1 << bit));
+      this->publish_sensor_state_(this->cell_balancing_sensors_[i], message[field] & (1 << bit));
     }
 #endif // USE_BINARY_SENSOR
 #ifdef USE_SENSOR
-    publish_sensor_state_(this->balance_current_sensor_, (message[2] << 8) | message[3], -30000, 0.001);
+    this->publish_sensor_state_(this->balance_current_sensor_, (message[2] << 8) | message[3], -30000, 0.001);
 #endif // USE_SENSOR
     break;
 
   case DALY_CAN_FAULT_INFO_1:
-    handle_msg_fault_info_1_(message);
+    this->handle_msg_fault_info_1_(message);
     break;
 
   default:
@@ -188,7 +188,7 @@ void DalyHkmsBmsComponent::handle_msg_cell_volts_(const std::vector<uint8_t> &me
     uint16_t mv = (message[1 + i * 2] << 8) | message[2 + i * 2];
     size_t cell_num = (page_num-1)*3 + i;
     if (cell_num < this->cell_voltage_sensors_max_) {
-      publish_sensor_state_(this->cell_voltage_sensors_[cell_num], mv, 0, 0.001);
+      this->publish_sensor_state_(this->cell_voltage_sensors_[cell_num], mv, 0, 0.001);
     }
   }
 #endif // USE_SENSOR
@@ -203,7 +203,7 @@ void DalyHkmsBmsComponent::handle_msg_cell_temps_(const std::vector<uint8_t> &me
     uint16_t val = message[1 + i];
     size_t temp_num = (page_num-1)*7 + i;
     if (temp_num < this->temperature_sensors_max_) {
-      publish_sensor_state_(this->temperature_sensors_[temp_num], val, -40, 1);
+      this->publish_sensor_state_(this->temperature_sensors_[temp_num], val, -40, 1);
     }
   }
 #endif // USE_SENSOR
@@ -223,21 +223,21 @@ void DalyHkmsBmsComponent::handle_msg_fault_info_1_(const std::vector<uint8_t> &
   DalyHkmsStatus status = *((DalyHkmsStatus*)this->fault_status_);
 
 #ifdef USE_SENSOR
-  publish_sensor_state_(this->alarm_level_cell_overvoltage_sensor_, status.lvl_cell_ovp, 0, 1);
-  publish_sensor_state_(this->alarm_level_cell_undervoltage_sensor_, status.lvl_cell_uvp, 0, 1);
-  publish_sensor_state_(this->alarm_level_cell_voltage_diff_sensor_, status.lvl_cell_volt_diff, 0, 1);
-  publish_sensor_state_(this->alarm_level_charge_overtemperature_sensor_, status.lvl_chg_overtemp, 0, 1);
-  publish_sensor_state_(this->alarm_level_charge_undertemperature_sensor_, status.lvl_chg_undertemp, 0, 1);
-  publish_sensor_state_(this->alarm_level_discharge_overtemperature_sensor_, status.lvl_dschg_overtemp, 0, 1);
-  publish_sensor_state_(this->alarm_level_discharge_undertemperature_sensor_, status.lvl_dschg_undertemp, 0, 1);
-  publish_sensor_state_(this->alarm_level_temperature_diff_sensor_, status.lvl_temp_diff, 0, 1);
-  publish_sensor_state_(this->alarm_level_overvoltage_sensor_, status.lvl_total_ovp, 0, 1);
-  publish_sensor_state_(this->alarm_level_undervoltage_sensor_, status.lvl_total_uvp, 0, 1);
-  publish_sensor_state_(this->alarm_level_charge_overcurrent_sensor_, status.lvl_chg_ocp, 0, 1);
-  publish_sensor_state_(this->alarm_level_discharge_overcurrent_sensor_, status.lvl_dschg_ocp, 0, 1);
-  publish_sensor_state_(this->alarm_level_soc_low_sensor_, status.lvl_soc_low, 0, 1);
-  publish_sensor_state_(this->alarm_level_soh_low_sensor_, status.lvl_soh_low, 0, 1);
-  publish_sensor_state_(this->alarm_level_mos_overtemperature_sensor_, status.lvl_mos_overtemp, 0, 1);
+  this->publish_sensor_state_(this->alarm_level_cell_overvoltage_sensor_, status.lvl_cell_ovp, 0, 1);
+  this->publish_sensor_state_(this->alarm_level_cell_undervoltage_sensor_, status.lvl_cell_uvp, 0, 1);
+  this->publish_sensor_state_(this->alarm_level_cell_voltage_diff_sensor_, status.lvl_cell_volt_diff, 0, 1);
+  this->publish_sensor_state_(this->alarm_level_charge_overtemperature_sensor_, status.lvl_chg_overtemp, 0, 1);
+  this->publish_sensor_state_(this->alarm_level_charge_undertemperature_sensor_, status.lvl_chg_undertemp, 0, 1);
+  this->publish_sensor_state_(this->alarm_level_discharge_overtemperature_sensor_, status.lvl_dschg_overtemp, 0, 1);
+  this->publish_sensor_state_(this->alarm_level_discharge_undertemperature_sensor_, status.lvl_dschg_undertemp, 0, 1);
+  this->publish_sensor_state_(this->alarm_level_temperature_diff_sensor_, status.lvl_temp_diff, 0, 1);
+  this->publish_sensor_state_(this->alarm_level_overvoltage_sensor_, status.lvl_total_ovp, 0, 1);
+  this->publish_sensor_state_(this->alarm_level_undervoltage_sensor_, status.lvl_total_uvp, 0, 1);
+  this->publish_sensor_state_(this->alarm_level_charge_overcurrent_sensor_, status.lvl_chg_ocp, 0, 1);
+  this->publish_sensor_state_(this->alarm_level_discharge_overcurrent_sensor_, status.lvl_dschg_ocp, 0, 1);
+  this->publish_sensor_state_(this->alarm_level_soc_low_sensor_, status.lvl_soc_low, 0, 1);
+  this->publish_sensor_state_(this->alarm_level_soh_low_sensor_, status.lvl_soh_low, 0, 1);
+  this->publish_sensor_state_(this->alarm_level_mos_overtemperature_sensor_, status.lvl_mos_overtemp, 0, 1);
 #endif // USE_SENSOR
 
   for (auto &input : this->registered_inputs_) {
@@ -273,16 +273,16 @@ void DalyHkmsBmsComponent::handle_msg_fault_info_1_(const std::vector<uint8_t> &
   has_errors |= (status.lvl_dschg_overtemp) > 1;
 
   has_errors |= status.err_chg_mos_temp_high;
-  publish_sensor_state_(this->error_charge_mos_overtemperature_binary_sensor_, status.err_chg_mos_temp_high);
+  this->publish_sensor_state_(this->error_charge_mos_overtemperature_binary_sensor_, status.err_chg_mos_temp_high);
   
   has_errors |= status.err_chg_mos_temp_detect;
-  publish_sensor_state_(this->error_charge_mos_temperature_detect_binary_sensor_, status.err_chg_mos_temp_detect);
+  this->publish_sensor_state_(this->error_charge_mos_temperature_detect_binary_sensor_, status.err_chg_mos_temp_detect);
 
   has_errors |= status.err_dschg_mos_temp_high;
-  publish_sensor_state_(this->error_discharge_mos_overtemperature_binary_sensor_, status.err_dschg_mos_temp_high);
+  this->publish_sensor_state_(this->error_discharge_mos_overtemperature_binary_sensor_, status.err_dschg_mos_temp_high);
   
   has_errors |= status.err_dschg_mos_temp_detect;
-  publish_sensor_state_(this->error_discharge_mos_temperature_detect_binary_sensor_, status.err_dschg_mos_temp_detect);
+  this->publish_sensor_state_(this->error_discharge_mos_temperature_detect_binary_sensor_, status.err_dschg_mos_temp_detect);
   
   // Code 4-5
   has_warnings |= (status.lvl_total_ovp) > 0;
@@ -292,7 +292,7 @@ void DalyHkmsBmsComponent::handle_msg_fault_info_1_(const std::vector<uint8_t> &
   has_errors |= (status.lvl_total_uvp) > 1;
 
   has_errors |= status.err_short_circuit;
-  publish_sensor_state_(this->error_short_circuit_binary_sensor_, status.err_short_circuit);
+  this->publish_sensor_state_(this->error_short_circuit_binary_sensor_, status.err_short_circuit);
   
   has_warnings |= (status.lvl_chg_ocp) > 0;
   has_errors |= (status.lvl_chg_ocp) > 1;
@@ -338,8 +338,8 @@ void DalyHkmsBmsComponent::handle_msg_fault_info_1_(const std::vector<uint8_t> &
 
   has_errors |= status.err_heating;
 
-  publish_sensor_state_(this->has_warnings_binary_sensor_, has_warnings || has_errors);
-  publish_sensor_state_(this->has_errors_binary_sensor_, has_errors);
+  this->publish_sensor_state_(this->has_warnings_binary_sensor_, has_warnings || has_errors);
+  this->publish_sensor_state_(this->has_errors_binary_sensor_, has_errors);
 #endif // USE_BINARY_SENSOR
 
 #ifdef USE_TEXT_ALERTS

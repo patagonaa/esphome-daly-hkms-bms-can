@@ -159,7 +159,7 @@ void DalyHkmsBmsComponent::on_frame(uint32_t can_id, bool extended_id, bool rtr,
 #ifdef USE_BINARY_SENSOR
     this->publish_sensor_state_(this->balancing_active_binary_sensor_, message[0] > 0);
 
-    for (size_t i = 0; i < DALY_CAN_MAX_CELL_COUNT; i++) {
+    for (size_t i = 0; i < this->cell_balancing_sensors_max_; i++) {
       size_t field = 4 + i / 8;
       size_t bit = i % 8;
       this->publish_sensor_state_(this->cell_balancing_sensors_[i], message[field] & (1 << bit));

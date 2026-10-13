@@ -17,7 +17,6 @@ daly_hkms_bms:
     canbus_id: bms_can
     bms_type: POWER
     address: 1
-    update_interval: 10s
 ```
 
 There can be multiple BMS attached to one CAN bus. To make this work, each BMS needs its own address which can be set in the DALY BMS Tool (Administrator -> Password `12345678` -> Manufacturing -> Board number).
@@ -27,10 +26,6 @@ There can be multiple BMS attached to one CAN bus. To make this work, each BMS n
 - **canbus_id**: ID of the [canbus component](https://esphome.io/components/canbus.html) the BMS is attached to
 - **bms_type**: The type of the BMS. Can be `POWER` or `ENERGY_STORAGE`. For most DALY BMS, `POWER` should be correct.
 - **address**: The address of the BMS. By default, this is set to 1. The address ("board number") can be set using the DALY PC software.
-- **update_interval**: Delay between data requests (default `30s`)
-- **update_interval_fast**:
-    Delay between interjected "fast" data requests (includes only voltage and current, default: off).
-    Be aware that fast requests always have priority, so if normal updates dont (always) work, this might be set too low.
 
 ### Sensor component
 
@@ -192,7 +187,6 @@ daly_hkms_bms:
   - canbus_id: bms_can
     id: bms_1
     address: 1
-    update_interval: 10s
 
 sensor:
   - platform: daly_hkms_bms

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <optional>
 #include <vector>
 
 #include "esphome/core/component.h"
@@ -234,7 +235,8 @@ class DalyHkmsBmsComponent final : public Component {
 
   uint8_t fault_status_[DALY_CAN_FAULT_STATUS_LEN] = {};
   uint32_t last_update_{0};
-  bool canbus_connectivity_{true};
+  bool check_connectivity_{false};
+  std::optional<bool> canbus_connectivity_{};
 
   uint8_t daly_address_;
   DalyHkmsBmsType bms_type_;

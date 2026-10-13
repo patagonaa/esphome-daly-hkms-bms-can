@@ -4,6 +4,7 @@
 #include <cstring>
 #include <sstream>
 
+#include "esphome/core/application.h"
 #include "esphome/core/log.h"
 #include "esphome/core/helpers.h"
 
@@ -13,6 +14,7 @@ namespace esphome::daly_hkms_bms {
 
 static const char *const TAG = "daly_hkms_bms";
 
+static constexpr uint32_t DALY_CAN_HEARTBEAT_MS = 2000;
 static constexpr uint32_t DALY_CAN_TIMEOUT_MS = 1000;
 
 DalyHkmsBmsComponent::DalyHkmsBmsComponent(canbus::Canbus *canbus) { this->canbus = canbus; }
@@ -25,25 +27,29 @@ void DalyHkmsBmsComponent::setup() {
   this->canbus->add_callback(cb);
 
   // needs to be sent regularly so daly bms sends periodic data
-  this->set_interval("request_data", 2000, [this]() { this->canbus->send_data(0x400FF80, true, false, {0, 0, 0, 0, 0, 0, 0, 0}); });
+  this->set_interval("heartbeat_request", DALY_CAN_HEARTBEAT_MS, [this]() { this->canbus->send_data(0x400FF80, true, false, {0, 0, 0, 0, 0, 0, 0, 0}); });
 
-  // give ESPHome some time to settle before throwing warnings
-  this->last_update_ = millis() + 5000;
+  // only enable connectivity check after waiting until first response is expected.
+  this->set_timeout(DALY_CAN_HEARTBEAT_MS + DALY_CAN_TIMEOUT_MS, [this]() { this->check_connectivity_ = true; });
 }
 
 void DalyHkmsBmsComponent::loop() {
-  bool canbus_connectivity = millis() < this->last_update_ + DALY_CAN_TIMEOUT_MS;
-  if (canbus_connectivity != this->canbus_connectivity_) {
-    this->canbus_connectivity_ = canbus_connectivity;
+  if (this->check_connectivity_) {
+    uint32_t now = App.get_loop_component_start_time();
+    bool canbus_connectivity = this->last_update_ != 0 && (now - this->last_update_) < DALY_CAN_TIMEOUT_MS;
+
+    if (!this->canbus_connectivity_.has_value() || canbus_connectivity != this->canbus_connectivity_.value()) {
+      this->canbus_connectivity_ = canbus_connectivity;
 #ifdef USE_BINARY_SENSOR
-    this->publish_sensor_state_(this->canbus_connectivity_binary_sensor_, canbus_connectivity);
+      this->publish_sensor_state_(this->canbus_connectivity_binary_sensor_, canbus_connectivity);
 #endif // USE_BINARY_SENSOR
-    if (!canbus_connectivity) {
-      ESP_LOGW(TAG, "BMS %d: no response after %" PRIu32 " ms", this->daly_address_, DALY_CAN_TIMEOUT_MS);
-      this->status_set_warning(LOG_STR("BMS read timeout"));
-    } else {
-      ESP_LOGW(TAG, "BMS %d: available again", this->daly_address_);
-      this->status_clear_warning();
+      if (!canbus_connectivity) {
+        ESP_LOGW(TAG, "BMS %d: no response after %" PRIu32 " ms", this->daly_address_, DALY_CAN_TIMEOUT_MS);
+        this->status_set_warning(LOG_STR("BMS read timeout"));
+      } else {
+        ESP_LOGW(TAG, "BMS %d: available", this->daly_address_);
+        this->status_clear_warning();
+      }
     }
   }
 }
@@ -59,9 +65,13 @@ void DalyHkmsBmsComponent::on_frame(uint32_t can_id, bool extended_id, bool rtr,
   }
 
   uint16_t register_id = (can_id & 0x1FFF0000) >> 16;
+  ESP_LOGV(TAG, "BMS %d: got register 0x%04" PRIx16, this->daly_address_, register_id);
 
   this->last_update_ = millis();
-  ESP_LOGV(TAG, "BMS %d: got register 0x%04" PRIx16, this->daly_address_, register_id);
+
+  // once we received a packet from the BMS, we can enable the connectivity check
+  // as we can be sure everything is ready.
+  this->check_connectivity_ = true;
 
   switch (register_id)
   {

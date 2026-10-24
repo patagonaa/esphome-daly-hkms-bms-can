@@ -6,6 +6,7 @@ from esphome.types import ConfigType
 
 CODEOWNERS = ["@patagonaa"]
 DEPENDENCIES = ["canbus"]
+DOMAIN = "daly_hkms_bms"
 MULTI_CONF = True
 
 CONF_CANBUS_ID = "canbus_id"
